@@ -1,0 +1,11 @@
+[project]
+name = "ass"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "mkdocs-pymdownx-material-extras>=2.8",
+    "pygments>=2.20.0",
+    "pymdown-extensions>=11.0.1",
+]

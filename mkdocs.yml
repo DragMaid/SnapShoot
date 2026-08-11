@@ -1,0 +1,77 @@
+site_name: RLPUBG
+site_description: Distributed real-time laser tag / AR shooting platform documentation
+repo_name: RLPUBG
+docs_dir: docs
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.indexes
+    - content.code.copy
+    - toc.follow
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Home: index.md
+  - Architecture:
+      - Overview: architecture/overview.md
+      - Services: architecture/services.md
+      - Hit Detection Pipeline: architecture/data-flow.md
+      - Networking: architecture/networking.md
+  - Services:
+      - Gateway: services/gateway.md
+      - Vision: services/vision.md
+      - Routing: services/routing.md
+      - Attribution: services/attribution.md
+      - Game Server: services/game-server.md
+      - Distributed Processing: services/distributed-processing.md
+      - Recorder: services/recorder.md
+      - Frontend: services/frontend.md
+  - Protocol: protocol/overview.md
+  - Development:
+      - Getting Started: development/getting-started.md
+      - Monorepo Structure: development/monorepo-structure.md
+      - Testing Strategy: development/testing.md
+  - Deployment: deployment/overview.md
+  - Architecture Decisions:
+      - Overview: adr/index.md
+      - "0001: Server-Authoritative Gameplay": adr/0001-server-authoritative-gameplay.md
+      - "0002: Centralized GPU Inference": adr/0002-centralized-gpu-inference.md
+      - "0003: Attribution as a Separate Service": adr/0003-attribution-service.md
+      - Template: adr/template.md
+  - Roadmap: roadmap.md
+  - Research: research/overview.md

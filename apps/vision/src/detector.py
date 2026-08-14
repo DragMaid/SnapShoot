@@ -159,14 +159,10 @@ class Detector:
 
 if __name__ == "__main__":
     BASE = Path(__file__).parent.parent
-    IMG = (
-        BASE
-        / "dataset/train/images"
-        / "GH010721_1684740561494_frame00232_jpg.rf.49db53299c453cc158cc73c7499d8a48.jpg"
-    )
+    IMG = BASE / "assets/example.jpg"
 
     if IMG.exists():
-        detector = Detector(od_enabled=True)
+        detector = Detector(od_enabled=False)
 
         print("Processing image...")
         img = cv2.imread(str(IMG))

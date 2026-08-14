@@ -34,3 +34,6 @@ build/
 
 ### Enviroments ###
 .env
+
+### Liquibase ###
+liquibase.properties

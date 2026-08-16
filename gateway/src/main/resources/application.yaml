@@ -30,3 +30,13 @@ server:
   port: 8080
   servlet:
     context-path: /api # /api prefix for each endpoint
+
+app:
+  jwt:
+    issuer: ${JWT_ISSUER}
+    secret: ${JWT_SECRET}
+
+  game:
+    max-players: 8
+    min-players: 2
+    max-game-session-duration-minutes: 60 # NOTE: Random duration for now

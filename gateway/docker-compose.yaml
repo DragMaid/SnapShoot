@@ -25,11 +25,13 @@ services:
       database:
         condition: service_healthy
     environment:
-      - POSTGRES_HOST=localhost
-      - POSTGRES_PORT=5432
+      - POSTGRES_HOST=database
+      - POSTGRES_PORT=${POSTGRES_PORT}
       - POSTGRES_DB=${POSTGRES_DB}
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - JWT_ISSUER=${JWT_ISSUER}
+      - JWT_SECRET=${JWT_SECRET}
     ports:
       - "8080:8080"
 

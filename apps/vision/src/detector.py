@@ -1,3 +1,4 @@
+import argparse
 from pathlib import Path
 
 import cv2
@@ -84,7 +85,7 @@ class Detector:
                             ),
                         }
                     )
-                return detected_objects
+        return detected_objects
 
     def _process_segment_only(self, img: MatLike) -> list[dict]:
         h_orig, w_orig = img.shape[:2]
@@ -157,61 +158,127 @@ class Detector:
         return hit_results
 
 
-if __name__ == "__main__":
+def _parse_args() -> "argparse.Namespace":
     BASE = Path(__file__).parent.parent
-    IMG = BASE / "assets/example.jpg"
 
-    if IMG.exists():
-        detector = Detector(od_enabled=False)
+    parser = argparse.ArgumentParser(
+        description=(
+            "Run the detector against a single image and preview a debug "
+            "overlay of detected object masks, plus a hit test against a "
+            "circular crosshair mask placed at the image center."
+        )
+    )
+    parser.add_argument(
+        "-i",
+        "--image",
+        type=Path,
+        default=BASE / "assets/example.jpg",
+        help="Path to the input image (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--od-enabled",
+        action="store_true",
+        help="Run object detection first, then segment each crop, instead "
+        "of segmenting the whole frame directly.",
+    )
+    parser.add_argument(
+        "--od-model",
+        default="yolov8n.pt",
+        help="Object detection model weights (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--seg-model",
+        default="yolov8n-seg.pt",
+        help="Segmentation model weights (default: %(default)s).",
+    )
+    parser.add_argument(
+        "--radius",
+        type=int,
+        default=10,
+        help="Radius in pixels of the example crosshair hit circle, placed "
+        "at the image center (default: %(default)s).",
+    )
+    parser.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        default=None,
+        help="Save the debug overlay to this path instead of/in addition "
+        "to displaying it.",
+    )
+    parser.add_argument(
+        "--no-display",
+        action="store_true",
+        help="Don't open a GUI preview window — use when running "
+        "headless/over SSH/in CI. If a GUI window can't be opened, this is "
+        "applied automatically and a warning is printed instead of crashing.",
+    )
+    return parser.parse_args()
 
-        print("Processing image...")
-        img = cv2.imread(str(IMG))
-        if img is not None:
-            objects = detector.process(img)
-            print(f"Detected {len(objects)} objects.")
 
-            # Example hit test: a circle with radius 10 in the middle of the image
-            h, w = img.shape[:2]
-            shape_mask = np.zeros((h, w), dtype=bool)
-            center_x, center_y = w // 2, h // 2
+if __name__ == "__main__":
+    args = _parse_args()
 
-            # Create the circle mask using cv2
-            RADIUS = 10
-            circle_canvas = np.zeros((h, w), dtype=np.uint8)
-            cv2.circle(circle_canvas, (center_x, center_y), RADIUS, 255, -1)
-            # Bitmap of tensor where circle is placed
-            shape_mask = circle_canvas > 0
+    if not args.image.exists():
+        print(f"Image not found at {args.image}")
+        raise SystemExit(1)
 
-            hits = detector.is_hit(objects, shape_mask)
-            print("Hit Results:", hits)
+    detector = Detector(
+        od_enabled=args.od_enabled,
+        od_model_path=args.od_model,
+        seg_model_path=args.seg_model,
+    )
 
-            overlay = img.copy()
+    print("Processing image...")
+    img = cv2.imread(str(args.image))
+    if img is None:
+        print("Could not load image.")
+        raise SystemExit(1)
 
-            # NOTE: the 0.5x multiply is to set transparency to 50%
-            for obj in objects:
-                seg_mask = obj["mask"]
-                overlay[seg_mask] = (overlay[seg_mask] + np.array([0, 255, 0])) * 0.5
-                intersection = np.logical_and(shape_mask, seg_mask)
-                overlay[intersection] = (
-                    overlay[intersection] + np.array([0, 0, 255])
-                ) * 0.5
+    objects = detector.process(img)
+    print(f"Detected {len(objects)} objects.")
 
-            # Shows hitbox of mask shapes that were not overlapped
-            pure_hitbox = (
-                np.logical_and(
-                    shape_mask, ~np.any([obj["mask"] for obj in objects], axis=0)
-                )
-                if objects
-                else shape_mask
-            )
-            overlay[pure_hitbox] = (overlay[pure_hitbox] + np.array([255, 0, 0])) * 0.5
+    # Example hit test: a circle with the given radius in the middle of the image
+    h, w = img.shape[:2]
+    center_x, center_y = w // 2, h // 2
 
+    # Create the circle mask using cv2
+    circle_canvas = np.zeros((h, w), dtype=np.uint8)
+    cv2.circle(circle_canvas, (center_x, center_y), args.radius, 255, -1)
+    # Bitmap of tensor where circle is placed
+    shape_mask = circle_canvas > 0
+
+    hits = detector.is_hit(objects, shape_mask)
+    print("Hit Results:", hits)
+
+    overlay = img.copy()
+
+    # NOTE: the 0.5x multiply is to set transparency to 50%
+    for obj in objects:
+        seg_mask = obj["mask"]
+        overlay[seg_mask] = (overlay[seg_mask] + np.array([0, 255, 0])) * 0.5
+        intersection = np.logical_and(shape_mask, seg_mask)
+        overlay[intersection] = (overlay[intersection] + np.array([0, 0, 255])) * 0.5
+
+    # Shows hitbox of mask shapes that were not overlapped
+    pure_hitbox = (
+        np.logical_and(shape_mask, ~np.any([obj["mask"] for obj in objects], axis=0))
+        if objects
+        else shape_mask
+    )
+    overlay[pure_hitbox] = (overlay[pure_hitbox] + np.array([255, 0, 0])) * 0.5
+    overlay = overlay.astype(np.uint8)
+
+    if args.output is not None:
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(args.output), overlay)
+        print(f"Saved debug overlay to {args.output}")
+
+    if not args.no_display:
+        try:
             # Display the result
-            cv2.imshow("Debug Overlay", overlay.astype(np.uint8))
+            cv2.imshow("Debug Overlay", overlay)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
-
-        else:
-            print("Could not load image.")
-    else:
-        print(f"Image not found at {IMG}")
+        except cv2.error:
+            print("Warning: couldn't open a GUI window (no display available).")

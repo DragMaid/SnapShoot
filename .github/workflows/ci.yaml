@@ -1,0 +1,148 @@
+name: CI
+
+# Runs each apps/<service>'s own test suite, but only for the service(s) a
+# PR/push actually touches. A change under libs/ is treated as touching
+# every service, since libs/ is shared code. New services under apps/ get
+# CI automatically — nothing here needs editing when one is added, as long
+# as it has a pyproject.toml (uv/Python) or package.json (npm/Node).
+
+on:
+  pull_request:
+    paths:
+      - "apps/**"
+      - "libs/**"
+      - ".github/workflows/ci.yaml"
+  push:
+    branches: [main]
+    paths:
+      - "apps/**"
+      - "libs/**"
+      - ".github/workflows/ci.yaml"
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detect:
+    name: Detect changed services
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.build-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List changed files
+        id: changed-files
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+            HEAD="${{ github.event.after }}"
+          fi
+
+          # Fall back to diffing against the parent commit if one side of the
+          # range is missing (e.g. force-push, or push of a brand-new branch).
+          if [ -z "$BASE" ] || [ "$BASE" = "0000000000000000000000000000000000000000" ]; then
+            BASE="$(git rev-parse "$HEAD~1" 2>/dev/null || echo "$HEAD")"
+          fi
+
+          git diff --name-only "$BASE" "$HEAD" > changed_files.txt
+          echo "----- changed files -----"
+          cat changed_files.txt
+
+      - name: Build service matrix
+        id: build-matrix
+        run: |
+          set -euo pipefail
+
+          # A libs/ change is a change to shared code every service depends
+          # on, so test everything. Otherwise, only test the apps/<service>
+          # directories that actually changed.
+          if grep -q '^libs/' changed_files.txt; then
+            mapfile -t services < <(find apps -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort)
+          else
+            mapfile -t services < <(grep '^apps/' changed_files.txt | cut -d/ -f2 | sort -u)
+          fi
+
+          entries=()
+          for service in "${services[@]}"; do
+            dir="apps/$service"
+            [ -d "$dir" ] || continue
+
+            if [ -f "$dir/pyproject.toml" ]; then
+              entries+=("{\"service\":\"$service\",\"kind\":\"python\"}")
+            elif [ -f "$dir/package.json" ]; then
+              entries+=("{\"service\":\"$service\",\"kind\":\"node\"}")
+            else
+              echo "::warning::apps/$service changed but has no pyproject.toml or package.json - skipping"
+            fi
+          done
+
+          if [ "${#entries[@]}" -eq 0 ]; then
+            matrix='{"include":[]}'
+          else
+            joined=$(IFS=,; echo "${entries[*]}")
+            matrix="{\"include\":[$joined]}"
+          fi
+
+          echo "matrix=$matrix" | tee -a "$GITHUB_OUTPUT"
+
+  test:
+    name: Test ${{ matrix.service }}
+    needs: detect
+    if: needs.detect.outputs.matrix != '{"include":[]}'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.detect.outputs.matrix) }}
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Python services (uv) ---
+      - name: Set up uv
+        if: matrix.kind == 'python'
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+          cache-dependency-glob: "apps/${{ matrix.service }}/uv.lock"
+
+      - name: Cache pretrained model weights
+        if: matrix.kind == 'python'
+        uses: actions/cache@v4
+        with:
+          path: apps/${{ matrix.service }}/*.pt
+          key: ${{ matrix.service }}-weights-${{ hashFiles(format('apps/{0}/pyproject.toml', matrix.service)) }}
+
+      - name: Install dependencies (uv sync)
+        if: matrix.kind == 'python'
+        run: uv sync --all-groups
+
+      - name: Run tests (pytest)
+        if: matrix.kind == 'python'
+        run: uv run pytest -v
+
+      # --- Node services (npm) ---
+      - name: Set up Node
+        if: matrix.kind == 'node'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/${{ matrix.service }}/package-lock.json
+
+      - name: Install dependencies (npm ci)
+        if: matrix.kind == 'node'
+        run: npm ci
+
+      - name: Run tests (npm test)
+        if: matrix.kind == 'node'
+        run: npm test --if-present

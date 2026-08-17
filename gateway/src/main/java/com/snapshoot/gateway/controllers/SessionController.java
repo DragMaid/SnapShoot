@@ -1,5 +1,6 @@
 package com.snapshoot.gateway.controllers;
 
+import com.snapshoot.gateway.common.security.JwtService;
 import com.snapshoot.gateway.dto.session.SessionCreateRequest;
 import com.snapshoot.gateway.dto.session.SessionResponse;
 import com.snapshoot.gateway.services.PlayerService;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -25,6 +27,7 @@ public class SessionController {
 
     private final SessionService sessionService;
     private final PlayerService playerService;
+    private final JwtService jwtService;
 
     @PostMapping
     public ResponseEntity<SessionResponse> createSession(
@@ -34,9 +37,10 @@ public class SessionController {
             request.maxPlayers(),
             request.durationMinutes()
         );
+        String token = playerService.createPlayer(request.roomCreatorName(), sessionId);
+        String playerId = jwtService.extractPlayerId(token);
 
-        String token = playerService.createPlayer();
-        sessionService.addPlayerToSession(sessionId, token);
+        sessionService.addPlayerToSession(sessionId, playerId);
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
@@ -45,10 +49,14 @@ public class SessionController {
 
     @PostMapping("/{sessionId}")
     public ResponseEntity<SessionResponse> joinSession(
-        @PathVariable String sessionId
+        @PathVariable String sessionId,
+        @RequestParam String username
     ) {
-        String token = playerService.createPlayer();
-        sessionService.addPlayerToSession(sessionId, token);
+        String token = playerService.createPlayer(username, sessionId);
+        String playerId = jwtService.extractPlayerId(token);
+
+        sessionService.addPlayerToSession(sessionId, playerId);
+
         return ResponseEntity.ok(new SessionResponse(token, sessionId));
     }
 }

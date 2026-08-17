@@ -4,6 +4,9 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record SessionCreateRequest(
+    @NotNull
+    String roomCreatorName,
+
     @NotNull(message = "maxPlayers is required")
     @Positive(message = "maxPlayers must be positive")
     Integer maxPlayers,

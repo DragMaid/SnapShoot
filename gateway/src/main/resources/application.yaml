@@ -31,6 +31,11 @@ server:
   servlet:
     context-path: /api # /api prefix for each endpoint
 
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
+
 app:
   jwt:
     issuer: ${JWT_ISSUER}

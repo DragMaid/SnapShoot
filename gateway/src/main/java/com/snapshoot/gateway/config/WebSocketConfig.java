@@ -21,7 +21,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry
-            .addHandler(phoneWebSocketHandler, "/ws/sessions/{sessionId}")
+            .addHandler(phoneWebSocketHandler, "/ws/phone-sessions/{sessionId}")
             .addInterceptors(webSocketAuthInterceptor)
             .setAllowedOrigins("*");
     }

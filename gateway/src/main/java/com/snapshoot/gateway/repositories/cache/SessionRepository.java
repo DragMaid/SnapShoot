@@ -43,6 +43,10 @@ public class SessionRepository {
         sessionCache.put(session.id(), session);
     }
 
+    public Set<Session> getAllSessions() {
+        return Set.copyOf(sessionCache.asMap().values());
+    }
+
     public Optional<Session> getSession(String sessionId) {
         return Optional.ofNullable(
             sessionCache.getIfPresent(sessionId)

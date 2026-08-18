@@ -25,6 +25,11 @@ public class SessionServiceImpl implements SessionService {
     private final GameConfig gameConfig;
 
     @Override
+    public Set<Session> retrieveSessions() {
+        return sessionRepository.getAllSessions();
+    }
+
+    @Override
     public String createGameSession(Integer maxPlayers, Integer durationMinutes) {
         if (maxPlayers > gameConfig.maxPlayers()) {
             throw new BadRequestException(

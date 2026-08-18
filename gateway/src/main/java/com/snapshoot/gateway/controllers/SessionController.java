@@ -1,6 +1,7 @@
 package com.snapshoot.gateway.controllers;
 
 import com.snapshoot.gateway.common.security.JwtService;
+import com.snapshoot.gateway.domain.cache.Session;
 import com.snapshoot.gateway.dto.session.SessionCreateRequest;
 import com.snapshoot.gateway.dto.session.SessionResponse;
 import com.snapshoot.gateway.services.PlayerService;
@@ -8,8 +9,11 @@ import com.snapshoot.gateway.services.SessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.util.Set;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +32,12 @@ public class SessionController {
     private final SessionService sessionService;
     private final PlayerService playerService;
     private final JwtService jwtService;
+
+    @GetMapping
+    public ResponseEntity<Set<Session>> getSessions() {
+        Set<Session> sessions = sessionService.retrieveSessions();
+        return ResponseEntity.ok(sessions);
+    }
 
     @PostMapping
     public ResponseEntity<SessionResponse> createSession(

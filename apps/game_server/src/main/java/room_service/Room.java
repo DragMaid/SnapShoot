@@ -1,6 +1,11 @@
 package room_service;
+
+import lombok.Getter;
+
 import java.util.ArrayList;
 import java.util.List;
+
+@Getter
 public class Room
 {
     private String creatorId;
@@ -11,57 +16,23 @@ public class Room
     private List<String> playerIds;
     private List<Team> teams;
 
-
-    ///constructor
-    public Room(String creatorId, String sessionId, String name, String password,int limit)
+    public Room(
+        String creatorId,
+        String sessionId,
+        String name,
+        String password,
+        int limit
+    )
     {
         this.creatorId = creatorId;
         this.sessionId = sessionId;
         this.name = name;
         this.password = password;
         this.limit = limit;
-        this.playerIds = new ArrayList <>();
+        this.playerIds = new ArrayList<>();
         this.teams = new ArrayList<>();
     }
 
-    ///get information
-    ///get creater ID
-    public String getCreatorId()
-    {
-        return creatorId;
-    }
-
-    ///get sesion Id
-    public String getSessionId()
-    {
-        return sessionId;
-    }
-
-    ///get name
-    public String getName()
-    {
-        return name;
-    }
-
-    ///get password 
-    public String getPassword()
-    {
-        return password;
-    }
-
-    ///get limit player in 1 room 
-    public int getLimit()
-    {
-        return limit;
-    }
-
-    ///Get players in room
-    public List<String>getPlayerIds()
-    {
-        return playerIds;
-    }
-
-    ///add player to room if valid 
     public boolean addPlayer(String playerId)
     {
         if (playerIds.contains(playerId))
@@ -78,49 +49,33 @@ public class Room
         return true;
     }
 
-    ///get teams 1 room
-    public List<Team> getTeams()
-    {
-        return teams;
-    }
-
-    ///allow creator create more teams
     public void addTeam(Team team)
     {
         teams.add(team);
     }
 
-
-    ///check whether player in the room
     public boolean hasPlayer(String playerId)
     {
         return playerIds.contains(playerId);
     }
 
-    ///get number of players in rooom
     public int getPlayerCount()
     {
         return playerIds.size();
     }
 
-    ///remove teams
     public boolean removeTeam(Team team)
     {
         return teams.remove(team);
     }
 
-    ///Remove player
     public boolean removePlayer(String playerId)
     {
         return playerIds.remove(playerId);
     }
 
-    ///set player to new creatorId if creator leave room
     public void setCreatorId(String newCreatorId)
     {
         this.creatorId = newCreatorId;
     }
-
-
 }
-

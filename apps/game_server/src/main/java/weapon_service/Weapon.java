@@ -9,7 +9,6 @@ public class Weapon
     private float reloadTime;
 
 
-///constructor
     public Weapon(String name, String type, int damage, float coolDown, int magazineSize, float reloadTime)
     {
         this.name = name;
@@ -20,8 +19,7 @@ public class Weapon
         this.reloadTime = reloadTime;
     }
 
-    ///get information of the gun 
-    ///get name of gun 
+
     public String getName()
     {
         return name;
@@ -39,19 +37,16 @@ public class Weapon
         return damage;
     }
 
-    ///get firerate (the time that the other shoot is accepctable)
     public float getCoolDown()
     {
         return coolDown;
     } 
 
-    ///get magagzine size
     public int getMagazineSize()
     {
         return magazineSize;
     }
 
-    ///get speed reload magazine of that weapon
     public float getReloadTime()
     {
         return reloadTime;

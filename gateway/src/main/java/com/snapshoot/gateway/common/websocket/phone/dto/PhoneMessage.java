@@ -1,4 +1,4 @@
-package com.snapshoot.gateway.common.websocket.dto;
+package com.snapshoot.gateway.common.websocket.phone.dto;
 
 // TODO: Mock Phone message for now, which simulates image and location data
 public record PhoneMessage(

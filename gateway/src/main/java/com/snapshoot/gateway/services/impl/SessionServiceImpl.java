@@ -60,4 +60,9 @@ public class SessionServiceImpl implements SessionService {
         Set<String> players = sessionRepository.getPlayers(sessionId);
         players.add(playerId);
     }
+
+    @Override
+    public boolean sessionExists(String sessionId) {
+        return sessionRepository.exists(sessionId);
+    }
 }

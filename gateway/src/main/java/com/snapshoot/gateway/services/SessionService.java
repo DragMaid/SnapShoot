@@ -10,4 +10,6 @@ public interface SessionService {
     String createGameSession(Integer maxPlayers, Integer durationMinutes);
 
     void addPlayerToSession(String sessionId, String playerId);
+
+    boolean sessionExists(String sessionId);
 }

@@ -5,8 +5,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
-import com.snapshoot.gateway.common.websocket.PhoneWebSocketHandler;
-import com.snapshoot.gateway.common.websocket.WebSocketAuthInterceptor;
+import com.snapshoot.gateway.common.websocket.phone.PhoneWebSocketAuthInterceptor;
+import com.snapshoot.gateway.common.websocket.phone.PhoneWebSocketHandler;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,7 +16,7 @@ import lombok.RequiredArgsConstructor;
 public class WebSocketConfig implements WebSocketConfigurer {
 
     private final PhoneWebSocketHandler phoneWebSocketHandler;
-    private final WebSocketAuthInterceptor webSocketAuthInterceptor;
+    private final PhoneWebSocketAuthInterceptor webSocketAuthInterceptor;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {

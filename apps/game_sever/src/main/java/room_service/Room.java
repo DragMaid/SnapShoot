@@ -8,6 +8,7 @@ public class Room
     private String name;
     private String password;
     private int limit;
+    private List<String> playerIds;
     private List<Team> teams;
 
 
@@ -19,6 +20,7 @@ public class Room
         this.name = name;
         this.password = password;
         this.limit = limit;
+        this.playerIds = new ArrayList <>();
         this.teams = new ArrayList<>();
     }
 
@@ -53,6 +55,22 @@ public class Room
         return limit;
     }
 
+    ///add player to room if valid 
+    public boolean addPlayer(String playerId)
+    {
+        if (playerIds.contains(playerId))
+        {
+            return false;
+        }
+
+        if (playerIds.size() >= limit)
+        {
+            return false;
+        }
+
+        playerIds.add(playerId);
+        return true;
+    }
 
     ///get teams 1 room
     public List<Team> getTeams()
@@ -60,15 +78,29 @@ public class Room
         return teams;
     }
 
-    ///count player limit in 1 room if enough full not accepts
+    ///allow creator create more teams
+    public void addTeam(Team team)
+    {
+        teams.add(team);
+    }
+
+
+    ///check whether player in the room
+    public boolean hasPlayer(String playerId)
+    {
+        return playerIds.contains(playerId);
+    }
+
+    ///get number of players in rooom
     public int getPlayerCount()
     {
-        int count = 0;
-        for (Team team : teams)
-        {
-            count += team.getPlayerIds().size();
-        }
-        return count;
+        return playerIds.size();
+    }
+
+    ///remove teams
+    public boolean removeTeam(Team team)
+    {
+        return teams.remove(team);
     }
 }
 

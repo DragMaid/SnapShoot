@@ -1,3 +1,4 @@
+package weapon_service;
 public class Weapon 
 {
     private String name;

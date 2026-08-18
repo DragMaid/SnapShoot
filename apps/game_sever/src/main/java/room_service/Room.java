@@ -1,6 +1,6 @@
-import java.time.LocalDateTime;
-import java.util.List;
+package room_service;
 import java.util.ArrayList;
+import java.util.List;
 public class Room
 {
     private String creatorId;
@@ -8,19 +8,17 @@ public class Room
     private String name;
     private String password;
     private int limit;
-    private LocalDateTime createdAt;
     private List<Team> teams;
 
 
     ///constructor
-    public Room(String creatorId, String sessionId, String name, String password,int limit, LocalDateTime createdAt)
+    public Room(String creatorId, String sessionId, String name, String password,int limit)
     {
         this.creatorId = creatorId;
         this.sessionId = sessionId;
         this.name = name;
         this.password = password;
         this.limit = limit;
-        this.createdAt = createdAt;
         this.teams = new ArrayList<>();
     }
 
@@ -55,11 +53,7 @@ public class Room
         return limit;
     }
 
-    ///get local tome 
-    public LocalDateTime getCreatedAt()
-    {
-        return createdAt;
-    }
+
     ///get teams 1 room
     public List<Team> getTeams()
     {
@@ -70,7 +64,7 @@ public class Room
     public int getPlayerCount()
     {
         int count = 0;
-        for (Team team : teams);
+        for (Team team : teams)
         {
             count += team.getPlayerIds().size();
         }

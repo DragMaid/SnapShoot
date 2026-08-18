@@ -1,10 +1,10 @@
-import java.util.Map;
-import java.time.LocalDateTime;
+package room_service;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
 import java.util.Random;
+import java.util.UUID;
 
 public class RoomService
 {
@@ -18,22 +18,20 @@ public class RoomService
     public Room createRoom(String creatorId, String name, String password,int limit)
     {
         String sessionId = UUID.randomUUID().toString();
-        LocalDateTime createdAt = LocalDateTime.now();
         
         Room room = new Room(
             creatorId,
             sessionId,
             name,
             password,
-            limit,
-            createdAt
+            limit
         );
         roomCache.put(sessionId, room);
         String teamId = UUID.randomUUID().toString();
         String color = getAvailableColor(room);
         Team team = new Team(teamId, color);
         team.addPlayer(creatorId);
-        team.getTeams().add(team);
+        room.getTeams().add(team);
         return room;
 
     }

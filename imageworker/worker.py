@@ -1,0 +1,80 @@
+import numpy as np
+import cv2
+from ..apps.vision.src.detector import Detector
+from .gateway_client import GatewayClient
+from asyncio import Semaphore
+import asyncio
+
+THRESHOLD = 0.5
+MAX_CONCURRENCY = 10
+
+
+class ImageWorker:
+    '''Carry out the task received from the gateway client'''
+    
+    def __init__(self, gateway: GatewayClient, max_concurrency: int = MAX_CONCURRENCY, threshold: int = THRESHOLD):
+
+        self.gateway = gateway
+        self.semaphore = Semaphore(max_concurrency)
+        self.threshold = threshold
+        self.detector = Detector()
+        self.processor = ImageProcessor(self.detector)
+
+    async def run(self):
+        '''Receive the task continously'''
+
+        await self.gateway.connect()
+
+        while True:
+
+            task = await self.gateway.receive()
+
+            asyncio.create_task(
+                self.handle_task(task)
+            )
+
+    async def handle_task(self, task: dict):
+
+        async with self.semaphore:
+
+            result = await self.processor.process_image(task)
+
+            await self.gateway.send(result)
+
+class ImageProcessor:
+    '''Handle the image processing and return the json with the result of hit or miss with boolean'''
+
+    def __init__(self, detector: Detector):
+        self.detector = detector
+
+    def process_image(self, data: dict):
+        '''Process the image based on the json received'''
+        data['result'] = self.is_hit(self.reconstruct_image())
+
+
+    def reconstruct_image(self, image_data: bytes):
+        """Restore the original image"""
+        image_array = np.frombuffer(image_data, dtype=np.uint8)
+
+        image = cv2.imdecode(
+            image_array,
+            cv2.IMREAD_COLOR
+        )
+        return image
+
+
+    def is_hit(self, image) -> bool:
+        '''Determines if the shot hits based on hit percentage'''
+        h, w = image[:2]
+        center_x, center_y = w // 2, h // 2
+        circle_canvas = np.zeros((w, h), dtype=np.unit8)
+        cv2.circle(circle_canvas, (center_x, center_y), self.radius, 255, -1)
+        shape_mask = circle_canvas > 0
+
+        detected_obj = self.detector.process(image)
+        hit_percentage = self.detector.is_hit(detected_objects=detected_obj, shape_mask=shape_mask)['hit_percentage']
+
+        if hit_percentage >= self.threshold:
+            return True
+        return False
+

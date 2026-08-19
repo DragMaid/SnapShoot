@@ -42,4 +42,9 @@ public class WorkerServiceImpl implements WorkerService {
     public void deleteWorker(String workerId) {
         workerRepository.delete(workerId);
     }
+
+    @Override
+    public boolean workerExists(String workerId) {
+        return workerRepository.exists(workerId);
+    }
 }

@@ -7,6 +7,8 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 
 import com.snapshoot.gateway.common.websocket.phone.PhoneWebSocketAuthInterceptor;
 import com.snapshoot.gateway.common.websocket.phone.PhoneWebSocketHandler;
+import com.snapshoot.gateway.common.websocket.worker.WorkerWebSocketAuthInterceptor;
+import com.snapshoot.gateway.common.websocket.worker.WorkerWebSocketHandler;
 
 import lombok.RequiredArgsConstructor;
 
@@ -15,14 +17,24 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class WebSocketConfig implements WebSocketConfigurer {
 
+    // Handle connection with the players
     private final PhoneWebSocketHandler phoneWebSocketHandler;
-    private final PhoneWebSocketAuthInterceptor webSocketAuthInterceptor;
+    private final PhoneWebSocketAuthInterceptor phoneWebSocketAuthInterceptor;
+
+    // Handle connection with the workers from Vision and Routing services
+    private final WorkerWebSocketHandler workerWebSocketHandler;
+    private final WorkerWebSocketAuthInterceptor workerWebSocketAuthInterceptor;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry
-            .addHandler(phoneWebSocketHandler, "/ws/phone-sessions/{sessionId}")
-            .addInterceptors(webSocketAuthInterceptor)
+            .addHandler(phoneWebSocketHandler, "/ws/phone/{sessionId}")
+            .addInterceptors(phoneWebSocketAuthInterceptor)
+            .setAllowedOrigins("*");
+
+        registry
+            .addHandler(workerWebSocketHandler, "/ws/workers/{workerId}")
+            .addInterceptors(workerWebSocketAuthInterceptor)
             .setAllowedOrigins("*");
     }
 }

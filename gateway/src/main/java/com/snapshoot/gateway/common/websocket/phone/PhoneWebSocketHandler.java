@@ -1,5 +1,10 @@
 package com.snapshoot.gateway.common.websocket.phone;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.snapshoot.gateway.common.websocket.phone.dto.ImageShot;
+import com.snapshoot.gateway.common.websocket.phone.dto.PositionAndOrientation;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -8,11 +13,6 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
-
-import com.snapshoot.gateway.common.websocket.phone.dto.ImageShot;
-import com.snapshoot.gateway.common.websocket.phone.dto.PhoneMessage;
-
-import lombok.RequiredArgsConstructor;
 
 @Component
 @RequiredArgsConstructor
@@ -23,6 +23,7 @@ public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
     );
 
     private final PhoneWebSocketRegistry registry;
+    private final ObjectMapper objectMapper;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -34,7 +35,10 @@ public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
     }
 
     @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
+    public void afterConnectionClosed(
+        WebSocketSession session,
+        CloseStatus status
+    ) {
         String playerId = (String) session.getAttributes().get("playerId");
 
         registry.remove(playerId);
@@ -52,14 +56,23 @@ public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
     ) {
         String playerId = (String) session.getAttributes().get("playerId");
 
-        PhoneMessage phoneMessage = new PhoneMessage(
-            PhoneMessage.MessageType.TEXT,
-            message.getPayload(),
-            null
-        );
+        try {
+            PositionAndOrientation phoneMessage = objectMapper.readValue(
+                message.getPayload(),
+                PositionAndOrientation.class
+            );
 
-        // TODO: Send to Routing service
-        logger.info("Send location data to Routing Service");
+            logger.info(
+                "Player {} position={}, orientation={}",
+                playerId,
+                phoneMessage.position(),
+                phoneMessage.orientation()
+            );
+
+            // TODO: Send to Routing service
+        } catch (JsonProcessingException e) {
+            logger.warn("Invalid phone message: {}", message.getPayload(), e);
+        }
     }
 
     /**

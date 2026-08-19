@@ -1,41 +1,47 @@
 package com.snapshoot.gateway.common.security;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-
-import javax.crypto.SecretKey;
-
-import org.springframework.stereotype.Service;
-
 import com.snapshoot.gateway.config.JwtConfig;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Date;
+import javax.crypto.SecretKey;
+import org.springframework.stereotype.Service;
 
 @Service
 public class JwtService {
+
     private final JwtConfig jwtConfig;
     private final SecretKey secretKey;
 
     public JwtService(JwtConfig jwtConfig) {
         this.jwtConfig = jwtConfig;
-        this.secretKey = Keys.hmacShaKeyFor(jwtConfig.secret().getBytes(StandardCharsets.UTF_8));
+        this.secretKey = Keys.hmacShaKeyFor(
+            jwtConfig.secret().getBytes(StandardCharsets.UTF_8)
+        );
     }
 
     /**
-     * Mints a signed JWT identifying {@code playerId}, valid for
-     * {@link JwtConfig#maxGameSessionDurationMinutes()}.
+     * Mints a signed JWT identifying players.
      */
-    public String generateGameJwtToken(String playerId, String sessionId, long gameSessionDurationMinutes) {
+    public String generatePhoneJwtToken(
+        String playerId,
+        String sessionId,
+        long gameSessionDurationMinutes
+    ) {
         Instant now = Instant.now();
-        Instant expiry = now.plus(gameSessionDurationMinutes, ChronoUnit.MINUTES);
+        Instant expiry = now.plus(
+            gameSessionDurationMinutes,
+            ChronoUnit.MINUTES
+        );
         return Jwts.builder()
             .setSubject(playerId)
             .claim("session_id", sessionId)
+            .claim("type", TokenType.PHONE.toString())
             .setIssuer(jwtConfig.issuer())
             .setIssuedAt(Date.from(now))
             .setExpiration(Date.from(expiry))
@@ -43,11 +49,26 @@ public class JwtService {
             .compact();
     }
 
+    /**
+     * Mints a signed JWT identifying a Vision/Routing worker.
+     */
+    public String generateWorkerJwtToken(String workerId) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+            .setSubject(workerId)
+            .claim("type", TokenType.WORKER.toString())
+            .setIssuer(jwtConfig.issuer())
+            .setIssuedAt(Date.from(now))
+            .signWith(secretKey)
+            .compact();
+    }
 
-    public boolean isTokenValid(String token) {
+    public boolean isTokenValid(String token, TokenType tokenType) {
         try {
-            parseClaim(token);
-            return true;
+            Claims claims = parseClaim(token);
+            String type = claims.get("type", String.class);
+
+            return tokenType.name().equals(type);
         } catch (JwtException | IllegalArgumentException e) {
             return false;
         }
@@ -59,6 +80,10 @@ public class JwtService {
 
     public String extractSessionId(String token) {
         return parseClaim(token).get("session_id", String.class);
+    }
+
+    public String extractWorkerId(String token) {
+        return parseClaim(token).getSubject();
     }
 
     private Claims parseClaim(String token) {

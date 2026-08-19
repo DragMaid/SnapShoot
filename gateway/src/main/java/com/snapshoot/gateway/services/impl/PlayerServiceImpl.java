@@ -31,7 +31,7 @@ public class PlayerServiceImpl implements PlayerService {
 
         String playerId = UUID.randomUUID().toString();
         playerRepository.save(new Player(playerId, username, session.durationMinutes()));
-        return jwtService.generateGameJwtToken(playerId, sessionId, session.durationMinutes());
+        return jwtService.generatePhoneJwtToken(playerId, sessionId, session.durationMinutes());
     }
 
     @Override

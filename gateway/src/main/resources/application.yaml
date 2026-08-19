@@ -45,3 +45,6 @@ app:
     max-players: 8
     min-players: 2
     max-game-session-duration-minutes: 60 # NOTE: Random duration for now
+
+  worker:
+    worker-password: ${WORKER_PASSWORD}

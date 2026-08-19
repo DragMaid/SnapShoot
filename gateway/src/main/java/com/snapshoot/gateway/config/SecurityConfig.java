@@ -24,6 +24,7 @@ public class SecurityConfig {
                     "/error"
                 ).permitAll()
                 .requestMatchers("/sessions", "/sessions/**").permitAll()
+                .requestMatchers("/register-worker", "/register-worker/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .anyRequest().authenticated()
             );

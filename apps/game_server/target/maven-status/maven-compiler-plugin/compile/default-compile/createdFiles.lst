@@ -1,0 +1,5 @@
+room_service/Room.class
+player_service/Player.class
+weapon_service/Weapon.class
+room_service/Team.class
+room_service/RoomHandleLogic.class

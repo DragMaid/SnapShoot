@@ -1,24 +1,21 @@
 package com.snapshoot.gateway.common.websocket.phone;
 
-import com.snapshoot.gateway.common.exception.NotFoundException;
-
 import com.snapshoot.gateway.common.security.JwtService;
 import com.snapshoot.gateway.common.security.TokenType;
 import com.snapshoot.gateway.services.SessionService;
 
-import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.server.HandshakeInterceptor;
-import org.springframework.web.util.UriComponentsBuilder;
-
 
 /**
  * WebSocket authentication by the player's JWT before establishing the connection
@@ -27,6 +24,8 @@ import org.springframework.web.util.UriComponentsBuilder;
 @Component
 @RequiredArgsConstructor
 public class PhoneWebSocketAuthInterceptor implements HandshakeInterceptor {
+
+    private static final String BEARER_PREFIX = "Bearer ";
 
     private final JwtService jwtService;
     private final SessionService sessionService;
@@ -48,8 +47,10 @@ public class PhoneWebSocketAuthInterceptor implements HandshakeInterceptor {
 
         String sessionId = jwtService.extractSessionId(token);
 
+        // Check if the game session exists
         if (!sessionService.sessionExists(sessionId)) {
-            throw new NotFoundException("Sesssion not found");
+            response.setStatusCode(HttpStatus.NOT_FOUND);
+            return false;
         }
 
         String playerId = jwtService.extractPlayerId(token);
@@ -66,19 +67,19 @@ public class PhoneWebSocketAuthInterceptor implements HandshakeInterceptor {
         @Nullable Exception exception
     ) {
         if (exception != null) {
-            log.warn("WebSocket handshake failed", exception);
+            log.warn("Phone WebSocket handshake failed", exception);
         } else {
-            log.info("WebSocket handshake successful");
+            log.info("Phone WebSocket handshake successful");
         }
     }
 
-    // TODO: Should be an auth header rather than a query param! For now I am still unclear about how a phone browser works.
     private String extractToken(ServerHttpRequest request) {
-        URI uri = request.getURI();
+        List<String> authHeaders = request.getHeaders().get(HttpHeaders.AUTHORIZATION);
+        if (authHeaders == null || authHeaders.isEmpty()) {
+            return null;
+        }
 
-        return UriComponentsBuilder.fromUri(uri)
-            .build()
-            .getQueryParams()
-            .getFirst("token");
+        String header = authHeaders.getFirst();
+        return header.startsWith(BEARER_PREFIX) ? header.substring(BEARER_PREFIX.length()) : null;
     }
 }

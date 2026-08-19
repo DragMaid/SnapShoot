@@ -2,6 +2,7 @@ package com.snapshoot.gateway.common.websocket.worker;
 
 import com.snapshoot.gateway.common.security.JwtService;
 import com.snapshoot.gateway.common.security.TokenType;
+import com.snapshoot.gateway.domain.enums.WorkerType;
 import com.snapshoot.gateway.services.WorkerService;
 
 import java.util.List;
@@ -53,7 +54,10 @@ public class WorkerWebSocketAuthInterceptor implements HandshakeInterceptor {
             return false;
         }
 
+        WorkerType workerType = workerService.getWorkerType(workerId);
+
         attributes.put("workerId", workerId);
+        attributes.put("workerType", workerType);
 
         return true;
     }

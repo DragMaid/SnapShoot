@@ -1,5 +1,7 @@
 package com.snapshoot.gateway.repositories.cache;
 
+import java.util.Optional;
+
 import org.springframework.stereotype.Repository;
 
 import com.github.benmanes.caffeine.cache.Cache;
@@ -16,6 +18,10 @@ public class WorkerRepository {
 
     public void save(Worker worker) {
         workerCache.put(worker.id(), worker);
+    }
+
+    public Optional<Worker> get(String workerId) {
+        return Optional.ofNullable(workerCache.getIfPresent(workerId));
     }
 
     public boolean exists(String workerId) {

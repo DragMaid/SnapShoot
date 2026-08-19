@@ -28,7 +28,7 @@ public class WorkerController {
 
     @PostMapping
     public ResponseEntity<WorkerResponse> registerWorker(@Valid @RequestBody WorkerRegisterRequest request) {
-        String token = workerService.registerWorker(request.password());
+        String token = workerService.registerWorker(request.workerType(), request.password());
         String workerId = jwtService.extractWorkerId(token);
 
         return ResponseEntity

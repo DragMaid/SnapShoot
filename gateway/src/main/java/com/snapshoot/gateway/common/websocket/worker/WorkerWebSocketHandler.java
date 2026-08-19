@@ -1,5 +1,6 @@
 package com.snapshoot.gateway.common.websocket.worker;
 
+import com.snapshoot.gateway.domain.enums.WorkerType;
 import com.snapshoot.gateway.services.WorkerService;
 
 import lombok.RequiredArgsConstructor;
@@ -21,10 +22,11 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         String workerId = (String) session.getAttributes().get("workerId");
+        WorkerType workerType = (WorkerType) session.getAttributes().get("workerType");
 
         registry.add(workerId, session);
 
-        log.info("Worker {} connected", workerId);
+        log.info("Worker {} ({}) connected", workerId, workerType);
     }
 
     @Override

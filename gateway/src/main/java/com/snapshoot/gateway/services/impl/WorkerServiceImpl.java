@@ -5,10 +5,12 @@ import java.util.UUID;
 
 import org.springframework.stereotype.Service;
 
+import com.snapshoot.gateway.common.exception.NotFoundException;
 import com.snapshoot.gateway.common.exception.UnauthorizedException;
 import com.snapshoot.gateway.common.security.JwtService;
 import com.snapshoot.gateway.config.WorkerConfig;
 import com.snapshoot.gateway.domain.cache.Worker;
+import com.snapshoot.gateway.domain.enums.WorkerType;
 import com.snapshoot.gateway.repositories.cache.WorkerRepository;
 import com.snapshoot.gateway.services.WorkerService;
 
@@ -27,14 +29,14 @@ public class WorkerServiceImpl implements WorkerService {
      * identification and verification.
      */
     @Override
-    public String registerWorker(String password) {
+    public String registerWorker(WorkerType workerType, String password) {
         if (!password.equals(workerConfig.workerPassword())) {
             throw new UnauthorizedException("Wrong worker password");
         }
 
         String workerId = UUID.randomUUID().toString();
 
-        workerRepository.save(new Worker(workerId, Instant.now()));
+        workerRepository.save(new Worker(workerId, workerType, Instant.now()));
         return jwtService.generateWorkerJwtToken(workerId);
     }
 
@@ -46,5 +48,13 @@ public class WorkerServiceImpl implements WorkerService {
     @Override
     public boolean workerExists(String workerId) {
         return workerRepository.exists(workerId);
+    }
+
+    @Override
+    public WorkerType getWorkerType(String workerId) {
+        return workerRepository
+            .get(workerId)
+            .map(Worker::workerType)
+            .orElseThrow(() -> new NotFoundException("Unknown workerId: " + workerId));
     }
 }

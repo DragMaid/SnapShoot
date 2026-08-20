@@ -2,23 +2,24 @@ import numpy as np
 import cv2
 from ..apps.vision.src.detector import Detector
 from .gateway_client import GatewayClient
-from asyncio import Semaphore
-import asyncio
+from pydantic import BaseModel
 
 THRESHOLD = 0.5
-MAX_CONCURRENCY = 10
+
+class WorkerMessage(BaseModel):
+    task_id: str = ''
+    session_id: str = ''
+    success: bool = False
 
 
 class ImageWorker:
     '''Carry out the task received from the gateway client'''
     
-    def __init__(self, gateway: GatewayClient, max_concurrency: int = MAX_CONCURRENCY, threshold: int = THRESHOLD):
+    def __init__(self, worker_id: str, password: str, gateway: GatewayClient, threshold: int = THRESHOLD):
 
-        self.gateway = gateway
-        self.semaphore = Semaphore(max_concurrency)
+        self.gateway = GatewayClient(worker_id=worker_id, password=password)
         self.threshold = threshold
         self.detector = Detector()
-        self.processor = ImageProcessor(self.detector)
 
     async def run(self):
         '''Receive the task continously'''
@@ -26,30 +27,22 @@ class ImageWorker:
         await self.gateway.connect()
 
         while True:
+            self.gateway.send(WorkerMessage())
 
             task = await self.gateway.receive()
 
-            asyncio.create_task(
-                self.handle_task(task)
-            )
+            self.handle_task(task)
 
     async def handle_task(self, task: dict):
 
-        async with self.semaphore:
+        result = await WorkerMessage(**self.process_image(task))
 
-            result = await self.processor.process_image(task)
+        await self.gateway.send(result)
 
-            await self.gateway.send(result)
-
-class ImageProcessor:
-    '''Handle the image processing and return the json with the result of hit or miss with boolean'''
-
-    def __init__(self, detector: Detector):
-        self.detector = detector
 
     def process_image(self, data: dict):
         '''Process the image based on the json received'''
-        data['result'] = self.is_hit(self.reconstruct_image())
+        data['success'] = self.is_hit(self.reconstruct_image())
 
 
     def reconstruct_image(self, image_data: bytes):

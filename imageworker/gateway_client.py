@@ -3,12 +3,14 @@ import asyncio
 import requests
 
 HTTPENDPOINT = ''
+WEBSOCKETENDPOINT = ''
 
 
-def HTTPConnect(password: str) -> str:
+def HTTPConnect(worker_id: str, password: str) -> str:
     '''Authenticate the worker in first connection'''
     response = requests.post(HTTPENDPOINT, 
-                             json={'password': password})
+                             json={'worker_id': worker_id,
+                                 'password': password})
     assert response.status_code == 200
     access_token = response.json()['access_token']
     return access_token
@@ -17,9 +19,8 @@ def HTTPConnect(password: str) -> str:
 class GatewayClient:
     '''Initiate the websocket connection with the gateway'''
 
-    def __init__(self, uri: str, token: str):
-        self.uri = uri
-        self.token = token
+    def __init__(self, worker_id: str, password: str, uri: str = WEBSOCKETENDPOINT):
+        self.token = HTTPConnect(worker_id, password)
         self.websocket = None
 
     async def connect(self):

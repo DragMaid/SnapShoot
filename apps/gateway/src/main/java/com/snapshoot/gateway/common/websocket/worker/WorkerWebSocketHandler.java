@@ -139,7 +139,8 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
             task.getSessionId(),
             task.getPlayerId(),
             task.getImageData(),
-            task.getOrientation()
+            task.getOrientation(),
+            task.getRadius()
         );
 
         try {

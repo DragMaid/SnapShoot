@@ -1,6 +1,6 @@
 package com.snapshoot.gateway.domain.queue;
 
-import com.snapshoot.gateway.common.websocket.phone.dto.ImageShot;
+import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootTrigger;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -16,7 +16,8 @@ public class Task {
     private String sessionId;
     private String playerId;
     private byte[] imageData;
-    private ImageShot.Orientation orientation;
+    private PlayerShootTrigger.Orientation orientation;
+    private double radius;
     private boolean visionComputed;
     private boolean routingComputed;
 }

@@ -2,7 +2,7 @@ package com.snapshoot.gateway.services;
 
 import java.util.Optional;
 
-import com.snapshoot.gateway.common.websocket.phone.dto.ImageShot;
+import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootTrigger;
 import com.snapshoot.gateway.domain.enums.WorkerType;
 import com.snapshoot.gateway.domain.queue.Task;
 
@@ -20,7 +20,8 @@ public interface TaskService {
         String sessionId,
         String playerId,
         byte[] imageData,
-        ImageShot.Orientation orientation
+        PlayerShootTrigger.Orientation orientation,
+        double radius
     );
 
     /**

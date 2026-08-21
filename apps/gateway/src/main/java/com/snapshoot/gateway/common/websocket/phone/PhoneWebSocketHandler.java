@@ -1,6 +1,6 @@
 package com.snapshoot.gateway.common.websocket.phone;
 
-import com.snapshoot.gateway.common.websocket.phone.dto.ImageShot;
+import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootTrigger;
 import com.snapshoot.gateway.services.TaskService;
 
 import lombok.RequiredArgsConstructor;
@@ -61,9 +61,9 @@ public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
         String playerId = (String) sessionAttributes.get("playerId");
         String sessionId = (String) sessionAttributes.get("sessionId");
 
-        ImageShot imageShot = objectMapper.readValue(message.getPayload().array(), ImageShot.class);
+        PlayerShootTrigger imageShot = objectMapper.readValue(message.getPayload().array(), PlayerShootTrigger.class);
 
         // Send image shot data into the vision service
-        taskService.submitTask(sessionId, playerId, imageShot.imageData(), imageShot.orientation());
+        taskService.submitTask(sessionId, playerId, imageShot.imageData(), imageShot.orientation(), imageShot.radius());
     }
 }

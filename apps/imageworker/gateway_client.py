@@ -1,5 +1,5 @@
 import websockets
-import asyncio
+# import asyncio
 import requests
 
 HTTPENDPOINT = ''
@@ -8,7 +8,7 @@ WEBSOCKETENDPOINT = ''
 
 def HTTPConnect(worker_id: str, password: str) -> str:
     '''Authenticate the worker in first connection'''
-    response = requests.post(HTTPENDPOINT, 
+    response = requests.post(HTTPENDPOINT,
                              json={'worker_id': worker_id,
                                  'password': password})
     assert response.status_code == 200

@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
-from ..apps.vision.src.detector import Detector
-from .gateway_client import GatewayClient
+from apps.vision.src.detector import Detector
+from gateway_client import GatewayClient
 from pydantic import BaseModel
 
 THRESHOLD = 0.5
@@ -14,7 +14,7 @@ class WorkerMessage(BaseModel):
 
 class ImageWorker:
     '''Carry out the task received from the gateway client'''
-    
+
     def __init__(self, worker_id: str, password: str, gateway: GatewayClient, threshold: int = THRESHOLD):
 
         self.gateway = GatewayClient(worker_id=worker_id, password=password)
@@ -74,4 +74,3 @@ class ImageWorker:
         if hit_percentage >= self.threshold:
             return True
         return False
-

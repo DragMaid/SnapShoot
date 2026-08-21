@@ -1,0 +1,17 @@
+[project]
+name = "imageworker"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "numpy>=2.5.2",
+    "opencv-python>=5.0.0.93",
+    "pydantic>=2.13.4",
+    "requests>=2.34.2",
+    "vision",
+    "websockets>=17.0.1",
+]
+
+[tool.uv.sources]
+vision = { workspace = true, editable = true }

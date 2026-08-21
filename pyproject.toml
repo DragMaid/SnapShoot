@@ -9,3 +9,9 @@ dependencies = [
     "pygments>=2.20.0",
     "pymdown-extensions>=11.0.1",
 ]
+
+[tool.uv.workspace]
+members = [
+    "apps/imageworker",
+    "apps/vision",
+]

@@ -13,5 +13,4 @@ public record TaskAssignment(
     String playerId,
     byte[] imageData,
     ImageShot.Orientation orientation
-) {
-}
+) {}

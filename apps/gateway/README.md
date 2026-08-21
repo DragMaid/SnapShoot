@@ -61,10 +61,34 @@ docker compose up --build
   ```bash
   ./scripts/new-migration.sh create_users
   ```
-  → produces `src/main/resources/db/changelog/migrations/001_create_users.sql`
+  → produces `src/main/resources/db/changelog/migrations/001_create_users.xml`, e.g.:
+  ```xml
+  <?xml version="1.1" encoding="UTF-8" standalone="no"?>
+  <databaseChangeLog xmlns="http://www.liquibase.org/xml/ns/dbchangelog" xmlns:ext="http://www.liquibase.org/xml/ns/dbchangelog-ext" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog-ext http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-ext.xsd http://www.liquibase.org/xml/ns/dbchangelog http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+      <changeSet author="fsxplay (generated)" id="1786869758026-1">
+          <createTable tableName="users">
+              <column autoIncrement="true" name="id" type="BIGINT">
+                  <constraints nullable="false" primaryKey="true" primaryKeyName="usersPK"/>
+              </column>
+              <column name="created_at" type="TIMESTAMP(6) WITH TIME ZONE">
+                  <constraints nullable="false"/>
+              </column>
+              <column name="email" type="VARCHAR(255)">
+                  <constraints nullable="false"/>
+              </column>
+              <column name="password" type="VARCHAR(255)">
+                  <constraints nullable="false"/>
+              </column>
+          </createTable>
+      </changeSet>
+      <changeSet author="fsxplay (generated)" id="1786869758026-2">
+          <addUniqueConstraint columnNames="email" constraintName="UC_USERSEMAIL_COL" tableName="users"/>
+      </changeSet>
+  </databaseChangeLog>
+  ```
 - **Apply pending migrations**:
   ```bash
   ./mvnw liquibase:update
   ```
-- **Naming convention**: `NNN_description.sql` (3-digit zero-padded prefix, formatted SQL changelog).
+- **Naming convention**: `NNN_description.xml` (3-digit zero-padded prefix, Liquibase XML changelog).
 - The script compiles first so Liquibase's Hibernate scan sees your entities. Run it (or `./mvnw compile`) before `liquibase:update` after a `mvn clean`, so the latest migrations are present in `target/classes`.

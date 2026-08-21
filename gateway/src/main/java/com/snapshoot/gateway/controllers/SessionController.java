@@ -6,6 +6,8 @@ import com.snapshoot.gateway.dto.session.SessionCreateRequest;
 import com.snapshoot.gateway.dto.session.SessionResponse;
 import com.snapshoot.gateway.services.PlayerService;
 import com.snapshoot.gateway.services.SessionService;
+
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -24,6 +26,10 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Manage different game sessions
  */
+ @Tag(
+     name = "Sessions",
+     description = "Operations for creating, listing, and joining game sessions."
+ )
 @RestController
 @RequestMapping("/sessions")
 @RequiredArgsConstructor

@@ -5,6 +5,7 @@ import com.snapshoot.gateway.dto.worker.WorkerRegisterRequest;
 import com.snapshoot.gateway.dto.worker.WorkerResponse;
 import com.snapshoot.gateway.services.WorkerService;
 
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +19,10 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Register Vision/Routing workers and issue their auth tokens.
  */
+ @Tag(
+     name = "Workers",
+     description = "Create workers for vision/routing/attribution services."
+ )
 @RestController
 @RequestMapping("/register-worker")
 @RequiredArgsConstructor

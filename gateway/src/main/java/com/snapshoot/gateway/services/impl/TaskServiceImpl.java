@@ -1,21 +1,19 @@
 package com.snapshoot.gateway.services.impl;
 
-import java.util.Optional;
-import java.util.UUID;
-import java.util.function.Consumer;
-
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-
+import com.snapshoot.gateway.common.websocket.phone.dto.ImageShot;
 import com.snapshoot.gateway.domain.enums.WorkerType;
 import com.snapshoot.gateway.domain.events.TaskPushedEvent;
 import com.snapshoot.gateway.domain.queue.Task;
 import com.snapshoot.gateway.repositories.queue.IdleWorkerRepository;
 import com.snapshoot.gateway.repositories.queue.TaskQueueRepository;
 import com.snapshoot.gateway.services.TaskService;
-
+import java.util.Optional;
+import java.util.UUID;
+import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
@@ -46,7 +44,7 @@ public class TaskServiceImpl implements TaskService {
         String sessionId,
         String playerId,
         byte[] imageData,
-        String orientation
+        ImageShot.Orientation orientation
     ) {
         Task task = new Task(
             UUID.randomUUID().toString(),
@@ -94,73 +92,83 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public void handleVisionResult(String workerId, String taskId, boolean visionComputed) {
+    public void handleVisionResult(
+        String workerId,
+        String taskId,
+        boolean visionComputed
+    ) {
         // Non-existent task warning
         Optional<Task> inFlight = taskQueueRepository.takeInFlight(workerId);
         if (inFlight.isEmpty()) {
-            log.warn("Vision worker {} reported a result but had no task in flight", workerId);
+            log.warn(
+                "Vision worker {} reported a result but had no task in flight",
+                workerId
+            );
             return;
         }
 
         // Wrong task warning
         Task task = inFlight.get();
-        if (!task.taskId().equals(taskId)) {
+        if (!task.getTaskId().equals(taskId)) {
             log.warn(
                 "Vision worker {} reported taskId {} but was holding {}",
                 workerId,
                 taskId,
-                task.taskId()
+                task.getTaskId()
             );
         }
 
         // Pass the task to the routing queue
         if (visionComputed) {
-            Task updatedTask = new Task(
-                task.taskId(),
-                task.sessionId(),
-                task.playerId(),
-                task.imageData(),
-                task.orientation(),
-                true,
-                task.routingComputed()
-            );
+            // Update the task to be
+            task.setVisionComputed(true);
 
             synchronized (routingLock) {
                 matchOrEnqueue(
-                    updatedTask,
+                    task,
                     idleWorkerRepository.takeIdleRoutingWorker(),
                     taskQueueRepository::enqueueRouting
                 );
             }
         } else {
-            log.info("Task {} discarded: vision found nothing", task.taskId());
+            log.info("Task {} discarded: vision found nothing", task.getTaskId());
         }
     }
 
     @Override
-    public void handleRoutingResult(String workerId, String taskId, boolean routingComputed) {
+    public void handleRoutingResult(
+        String workerId,
+        String taskId,
+        boolean routingComputed
+    ) {
         // Non-existent task warning
         Optional<Task> inFlight = taskQueueRepository.takeInFlight(workerId);
         if (inFlight.isEmpty()) {
-            log.warn("Routing worker {} reported a result but had no task in flight", workerId);
+            log.warn(
+                "Routing worker {} reported a result but had no task in flight",
+                workerId
+            );
             return;
         }
 
         // Wrong task warning
         Task task = inFlight.get();
-        if (!task.taskId().equals(taskId)) {
+        if (!task.getTaskId().equals(taskId)) {
             log.warn(
                 "Routing worker {} reported taskId {} but was holding {}",
                 workerId,
                 taskId,
-                task.taskId()
+                task.getTaskId()
             );
         }
 
         // TODO: Forward the completed task to the Attribution service once it exists
-        log.info("Task {} routing computed: {}", task.taskId(), routingComputed);
+        log.info(
+            "Task {} routing computed: {}",
+            task.getTaskId(),
+            routingComputed
+        );
     }
-
 
     @Override
     public void workerDisconnected(WorkerType workerType, String workerId) {
@@ -177,7 +185,11 @@ public class TaskServiceImpl implements TaskService {
      * back to queuing the task normally. Must be called under the lock
      * matching {@code task}'s queue (vision/routing).
      */
-    private void matchOrEnqueue(Task task, Optional<String> idleWorkerId, Consumer<Task> enqueue) {
+    private void matchOrEnqueue(
+        Task task,
+        Optional<String> idleWorkerId,
+        Consumer<Task> enqueue
+    ) {
         if (idleWorkerId.isPresent()) {
             String workerId = idleWorkerId.get();
             taskQueueRepository.putInFlight(workerId, task);

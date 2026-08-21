@@ -1,5 +1,7 @@
 package com.snapshoot.gateway.common.websocket.worker.dto;
 
+import com.snapshoot.gateway.common.websocket.phone.dto.ImageShot;
+
 /**
  * Outbound message handing a task to a worker in response to {@code READY}.
  * Deliberately excludes the task's computed flags — those are the
@@ -10,6 +12,6 @@ public record TaskAssignment(
     String sessionId,
     String playerId,
     byte[] imageData,
-    String orientation
+    ImageShot.Orientation orientation
 ) {
 }

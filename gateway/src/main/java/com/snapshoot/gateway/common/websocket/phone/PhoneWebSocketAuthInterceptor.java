@@ -55,6 +55,7 @@ public class PhoneWebSocketAuthInterceptor implements HandshakeInterceptor {
 
         String playerId = jwtService.extractPlayerId(token);
         attributes.put("playerId", playerId);
+        attributes.put("sessionId", sessionId);
 
         return true;
     }

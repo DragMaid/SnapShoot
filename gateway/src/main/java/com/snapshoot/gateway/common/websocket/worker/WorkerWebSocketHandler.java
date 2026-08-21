@@ -108,7 +108,7 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
                 () ->
                     log.warn(
                         "Task {} assigned to worker {} but no active session found",
-                        event.task().taskId(),
+                        event.task().getTaskId(),
                         event.workerId()
                     )
             );
@@ -135,11 +135,11 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
      */
     private void sendTaskAssignment(WebSocketSession session, Task task) {
         TaskAssignment assignment = new TaskAssignment(
-            task.taskId(),
-            task.sessionId(),
-            task.playerId(),
-            task.imageData(),
-            task.orientation()
+            task.getTaskId(),
+            task.getSessionId(),
+            task.getPlayerId(),
+            task.getImageData(),
+            task.getOrientation()
         );
 
         try {

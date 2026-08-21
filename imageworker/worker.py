@@ -35,14 +35,18 @@ class ImageWorker:
 
     async def handle_task(self, task: dict):
 
-        result = await WorkerMessage(**self.process_image(task))
+        result = await self.process_image(task)
 
         await self.gateway.send(result)
 
 
     def process_image(self, data: dict):
         '''Process the image based on the json received'''
-        data['success'] = self.is_hit(self.reconstruct_image())
+        success = self.is_hit(self.reconstruct_image())
+        result = WorkerMessage(task_id = data['task_id'],
+                               session_id = data['session_id'],
+                               success = success)
+        return result
 
 
     def reconstruct_image(self, image_data: bytes):

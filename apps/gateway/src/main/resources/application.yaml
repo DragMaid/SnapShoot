@@ -48,3 +48,6 @@ app:
 
   worker:
     worker-password: ${WORKER_PASSWORD}
+
+  game-server:
+    game-server-password: ${GAME_SERVER_PASSWORD}

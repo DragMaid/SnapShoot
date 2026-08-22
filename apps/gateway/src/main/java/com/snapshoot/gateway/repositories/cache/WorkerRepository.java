@@ -10,6 +10,7 @@ import com.snapshoot.gateway.domain.cache.Worker;
 
 /**
  * An in-memory datastore for registered Vision/Routing workers.
+ * Each worker is identified by its workerId.
  */
 @Repository
 public class WorkerRepository {

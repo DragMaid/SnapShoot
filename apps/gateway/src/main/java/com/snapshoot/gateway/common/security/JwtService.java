@@ -63,6 +63,20 @@ public class JwtService {
             .compact();
     }
 
+    /**
+     * Mints a signed JWT identifying different game servers.
+     */
+    public String generateGameServerJwtToken(String gameServerId) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+            .setSubject(gameServerId)
+            .claim("type", TokenType.GAME_SERVER.toString())
+            .setIssuer(jwtConfig.issuer())
+            .setIssuedAt(Date.from(now))
+            .signWith(secretKey)
+            .compact();
+    }
+
     public boolean isTokenValid(String token, TokenType tokenType) {
         try {
             Claims claims = parseClaim(token);
@@ -83,6 +97,10 @@ public class JwtService {
     }
 
     public String extractWorkerId(String token) {
+        return parseClaim(token).getSubject();
+    }
+
+    public String extractGameServerId(String token) {
         return parseClaim(token).getSubject();
     }
 

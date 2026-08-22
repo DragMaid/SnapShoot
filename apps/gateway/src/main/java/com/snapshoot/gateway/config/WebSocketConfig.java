@@ -5,6 +5,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 
+import com.snapshoot.gateway.common.websocket.game_server.GameServerWebSocketAuthInterceptor;
+import com.snapshoot.gateway.common.websocket.game_server.GameServerWebSocketHandler;
 import com.snapshoot.gateway.common.websocket.phone.PhoneWebSocketAuthInterceptor;
 import com.snapshoot.gateway.common.websocket.phone.PhoneWebSocketHandler;
 import com.snapshoot.gateway.common.websocket.worker.WorkerWebSocketAuthInterceptor;
@@ -25,6 +27,10 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final WorkerWebSocketHandler workerWebSocketHandler;
     private final WorkerWebSocketAuthInterceptor workerWebSocketAuthInterceptor;
 
+    // Handle connection with the game servers
+    private final GameServerWebSocketHandler gameServerWebSocketHandler;
+    private final GameServerWebSocketAuthInterceptor gameServerWebSocketAuthInterceptor;
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
         registry
@@ -35,6 +41,11 @@ public class WebSocketConfig implements WebSocketConfigurer {
         registry
             .addHandler(workerWebSocketHandler, "/ws/workers/{workerId}")
             .addInterceptors(workerWebSocketAuthInterceptor)
+            .setAllowedOrigins("*");
+
+        registry
+            .addHandler(gameServerWebSocketHandler, "/ws/game-servers/{gameServerId}")
+            .addInterceptors(gameServerWebSocketAuthInterceptor)
             .setAllowedOrigins("*");
     }
 }

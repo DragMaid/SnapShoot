@@ -1,4 +1,4 @@
-package main.java.com.snapshoot.gateway.config;
+package com.snapshoot.gateway.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 

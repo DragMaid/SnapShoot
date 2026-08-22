@@ -11,6 +11,7 @@ import com.snapshoot.gateway.common.security.JwtService;
 import com.snapshoot.gateway.config.WorkerConfig;
 import com.snapshoot.gateway.domain.cache.Worker;
 import com.snapshoot.gateway.domain.enums.WorkerType;
+import com.snapshoot.gateway.dto.worker.WorkerResponse;
 import com.snapshoot.gateway.repositories.cache.WorkerRepository;
 import com.snapshoot.gateway.services.WorkerService;
 
@@ -29,15 +30,17 @@ public class WorkerServiceImpl implements WorkerService {
      * identification and verification.
      */
     @Override
-    public String registerWorker(WorkerType workerType, String password) {
+    public WorkerResponse registerWorker(WorkerType workerType, String password) {
         if (!password.equals(workerConfig.workerPassword())) {
             throw new UnauthorizedException("Wrong worker password");
         }
 
+        // Create a worker and its JWT token
         String workerId = UUID.randomUUID().toString();
-
         workerRepository.save(new Worker(workerId, workerType, Instant.now()));
-        return jwtService.generateWorkerJwtToken(workerId);
+        String token = jwtService.generateWorkerJwtToken(workerId);
+
+        return new WorkerResponse(workerId, token);
     }
 
     @Override

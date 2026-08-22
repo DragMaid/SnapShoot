@@ -33,11 +33,10 @@ public class WorkerController {
 
     @PostMapping
     public ResponseEntity<WorkerResponse> registerWorker(@Valid @RequestBody WorkerRegisterRequest request) {
-        String token = workerService.registerWorker(request.workerType(), request.password());
-        String workerId = jwtService.extractWorkerId(token);
+        WorkerResponse workerResponse = workerService.registerWorker(request.workerType(), request.password());
 
         return ResponseEntity
             .status(HttpStatus.CREATED)
-            .body(new WorkerResponse(token, workerId));
+            .body(workerResponse);
     }
 }

@@ -1,7 +1,7 @@
 package com.snapshoot.gateway.common.websocket.worker;
 
 import com.snapshoot.gateway.common.security.JwtService;
-import com.snapshoot.gateway.common.security.TokenType;
+import com.snapshoot.gateway.domain.enums.WebSocketPeerType;
 import com.snapshoot.gateway.domain.enums.WorkerType;
 import com.snapshoot.gateway.services.WorkerService;
 
@@ -41,7 +41,7 @@ public class WorkerWebSocketAuthInterceptor implements HandshakeInterceptor {
         String token = extractToken(request);
 
         // Check if token is not expired
-        if (token == null || !jwtService.isTokenValid(token, TokenType.WORKER)) {
+        if (token == null || !jwtService.isTokenValid(token, WebSocketPeerType.WORKER)) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }

@@ -1,6 +1,8 @@
 package com.snapshoot.gateway.common.security;
 
 import com.snapshoot.gateway.config.JwtConfig;
+import com.snapshoot.gateway.domain.enums.WebSocketPeerType;
+
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
@@ -41,7 +43,7 @@ public class JwtService {
         return Jwts.builder()
             .setSubject(playerId)
             .claim("session_id", sessionId)
-            .claim("type", TokenType.PHONE.toString())
+            .claim("type", WebSocketPeerType.PHONE.toString())
             .setIssuer(jwtConfig.issuer())
             .setIssuedAt(Date.from(now))
             .setExpiration(Date.from(expiry))
@@ -56,7 +58,7 @@ public class JwtService {
         Instant now = Instant.now();
         return Jwts.builder()
             .setSubject(workerId)
-            .claim("type", TokenType.WORKER.toString())
+            .claim("type", WebSocketPeerType.WORKER.toString())
             .setIssuer(jwtConfig.issuer())
             .setIssuedAt(Date.from(now))
             .signWith(secretKey)
@@ -70,14 +72,14 @@ public class JwtService {
         Instant now = Instant.now();
         return Jwts.builder()
             .setSubject(gameServerId)
-            .claim("type", TokenType.GAME_SERVER.toString())
+            .claim("type", WebSocketPeerType.GAME_SERVER.toString())
             .setIssuer(jwtConfig.issuer())
             .setIssuedAt(Date.from(now))
             .signWith(secretKey)
             .compact();
     }
 
-    public boolean isTokenValid(String token, TokenType tokenType) {
+    public boolean isTokenValid(String token, WebSocketPeerType tokenType) {
         try {
             Claims claims = parseClaim(token);
             String type = claims.get("type", String.class);

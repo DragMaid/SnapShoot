@@ -4,25 +4,22 @@ import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootTrigger;
 import com.snapshoot.gateway.services.TaskService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
 
-    private static final Logger logger = LoggerFactory.getLogger(
-        PhoneWebSocketHandler.class
-    );
     private final ObjectMapper objectMapper;
     private final PhoneWebSocketRegistry registry;
     private final TaskService taskService;
@@ -33,7 +30,7 @@ public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
 
         registry.add(playerId, session);
 
-        logger.info("Player {} connected", playerId);
+        log.info("Player {} connected", playerId);
     }
 
     @Override
@@ -45,7 +42,7 @@ public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
 
         registry.remove(playerId);
 
-        logger.info("Player {} disconnected: {}", playerId, status);
+        log.info("Player {} disconnected: {}", playerId, status);
     }
 
     /**

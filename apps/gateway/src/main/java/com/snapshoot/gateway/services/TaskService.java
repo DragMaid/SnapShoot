@@ -14,9 +14,9 @@ import com.snapshoot.gateway.domain.queue.Task;
 public interface TaskService {
 
     /**
-     * Push this task into the idle vision worker (if any). Else, enqueue it into the vision tasks queue.
+     * Push this task into the vision queue (vision computing is the first step)
      */
-    void submitTask(
+    void submitTaskToVisionQueue(
         String sessionId,
         String playerId,
         byte[] imageData,
@@ -33,6 +33,11 @@ public interface TaskService {
      * Get the next task for routing workers. If not found, put that routing worker into a waitlist.
      */
     Optional<Task> nextRoutingTask(String workerId);
+
+    /**
+     * Get any idle VISION/ROUTING worker.
+     */
+    Optional<String> getIdleWorker(WorkerType workerType);
 
     /**
      * Handle the result from the vision worker

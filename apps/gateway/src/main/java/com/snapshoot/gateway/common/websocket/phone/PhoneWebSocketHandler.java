@@ -61,6 +61,6 @@ public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
         PlayerShootTrigger imageShot = objectMapper.readValue(message.getPayload().array(), PlayerShootTrigger.class);
 
         // Send image shot data into the vision service
-        taskService.submitTask(sessionId, playerId, imageShot.imageData(), imageShot.orientation(), imageShot.radius());
+        taskService.submitTaskToVisionQueue(sessionId, playerId, imageShot.imageData(), imageShot.orientation(), imageShot.radius());
     }
 }

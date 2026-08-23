@@ -1,7 +1,7 @@
 package com.snapshoot.gateway.common.websocket.game_server;
 
 import com.snapshoot.gateway.common.security.JwtService;
-import com.snapshoot.gateway.common.security.TokenType;
+import com.snapshoot.gateway.domain.enums.WebSocketPeerType;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +38,7 @@ public class GameServerWebSocketAuthInterceptor implements HandshakeInterceptor 
         String token = extractToken(request);
 
         // Check if token is not expired
-        if (token == null || !jwtService.isTokenValid(token, TokenType.GAME_SERVER)) {
+        if (token == null || !jwtService.isTokenValid(token, WebSocketPeerType.GAME_SERVER)) {
             response.setStatusCode(HttpStatus.UNAUTHORIZED);
             return false;
         }

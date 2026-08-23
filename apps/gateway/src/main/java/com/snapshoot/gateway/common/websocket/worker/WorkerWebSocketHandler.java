@@ -2,18 +2,15 @@ package com.snapshoot.gateway.common.websocket.worker;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.snapshoot.gateway.common.websocket.worker.dto.TaskAssignment;
+import com.snapshoot.gateway.common.websocket.worker.client.WorkerWebSocketClient;
 import com.snapshoot.gateway.common.websocket.worker.dto.WorkerMessage;
 import com.snapshoot.gateway.domain.enums.WorkerType;
-import com.snapshoot.gateway.domain.events.TaskPushedEvent;
 import com.snapshoot.gateway.domain.queue.Task;
 import com.snapshoot.gateway.services.TaskService;
 import com.snapshoot.gateway.services.WorkerService;
-import java.io.IOException;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -26,6 +23,8 @@ import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
 
     private final WorkerWebSocketRegistry registry;
+    private final WorkerWebSocketClient client;
+
     private final WorkerService workerService;
     private final TaskService taskService;
     private final ObjectMapper objectMapper;
@@ -96,25 +95,6 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
     }
 
     /**
-     * A task was matched to a worker that was already parked as idle
-     * — push it straight to that worker's socket.
-     */
-    @EventListener
-    public void onTaskPushed(TaskPushedEvent event) {
-        registry
-            .get(event.workerId())
-            .ifPresentOrElse(
-                session -> sendTaskAssignment(session, event.task()),
-                () ->
-                    log.warn(
-                        "Task {} assigned to worker {} but no active session found",
-                        event.task().getTaskId(),
-                        event.workerId()
-                    )
-            );
-    }
-
-    /**
      * Receive a READY message from a worker, find a task and then assign it to that worker.
      */
     private void handleReady(
@@ -127,35 +107,7 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
                 ? taskService.nextVisionTask(workerId)
                 : taskService.nextRoutingTask(workerId);
 
-        task.ifPresent(t -> sendTaskAssignment(session, t));
-    }
-
-    /**
-     * Send a task assignment to the worker.
-     */
-    private void sendTaskAssignment(WebSocketSession session, Task task) {
-        TaskAssignment assignment = new TaskAssignment(
-            task.getTaskId(),
-            task.getSessionId(),
-            task.getPlayerId(),
-            task.getImageData(),
-            task.getOrientation(),
-            task.getRadius()
-        );
-
-        try {
-            session.sendMessage(
-                new TextMessage(objectMapper.writeValueAsString(assignment))
-            );
-        } catch (IOException e) {
-            String workerId = (String) session.getAttributes().get("workerId");
-            log.warn(
-                "Failed to send task {} to worker {}",
-                assignment.taskId(),
-                workerId,
-                e
-            );
-        }
+        task.ifPresent(t -> client.sendTask(workerId, t));
     }
 
     /**

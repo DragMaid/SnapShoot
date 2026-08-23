@@ -1,6 +1,5 @@
 package com.snapshoot.gateway.controllers;
 
-import com.snapshoot.gateway.common.security.JwtService;
 import com.snapshoot.gateway.dto.worker.WorkerRegisterRequest;
 import com.snapshoot.gateway.dto.worker.WorkerResponse;
 import com.snapshoot.gateway.services.WorkerService;
@@ -29,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class WorkerController {
 
     private final WorkerService workerService;
-    private final JwtService jwtService;
 
     @PostMapping
     public ResponseEntity<WorkerResponse> registerWorker(@Valid @RequestBody WorkerRegisterRequest request) {

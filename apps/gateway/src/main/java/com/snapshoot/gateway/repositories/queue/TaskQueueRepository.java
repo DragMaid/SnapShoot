@@ -42,14 +42,14 @@ public class TaskQueueRepository {
     }
 
     /**
-     * Assign the task to a vision worker and dequeue it from the vision queue
+     * Assign the task to a vision worker
      */
     public Optional<Task> pollVision(String workerId) {
         return poll(visionTaskQueue, workerId);
     }
 
     /**
-     * Assign the task to a routing worker and dequeue it from the routing queue
+     * Assign the task to a routing worker
      */
     public Optional<Task> pollRouting(String workerId) {
         return poll(routingTaskQueue, workerId);

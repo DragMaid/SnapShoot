@@ -7,10 +7,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.stereotype.Repository;
 
+import com.snapshoot.gateway.domain.enums.WorkerType;
+
 /**
- * Tracks Vision/Routing workers that asked for a task ({@code READY}) while
- * none was available, so the next task to arrive can be matched to one of
- * them directly instead of waiting for another poll.
+ * Tracks FREE workers.
  */
 @Repository
 public class IdleWorkerRepository {
@@ -21,29 +21,35 @@ public class IdleWorkerRepository {
     /**
      * Park a vision worker as idle, unless it's already parked.
      */
-    public void markIdleVision(String workerId) {
+    public void addToIdleVisionWorkers(String workerId) {
         idleVisionWorkers.add(workerId);
     }
 
     /**
      * Park a routing worker as idle, unless it's already parked.
      */
-    public void markIdleRouting(String workerId) {
+    public void addToIdleRoutingWorkers(String workerId) {
         idleRoutingWorkers.add(workerId);
     }
 
     /**
-     * Take an idle vision worker, if any.
+     * Take any worker based on the WorkerType (VISION/ROUTING)
      */
-    public Optional<String> takeIdleVisionWorker() {
-        return takeIdle(idleVisionWorkers);
-    }
+    public Optional<String> takeIdleWorker(WorkerType workerType) {
+        Set<String> idleWorkers = switch (workerType) {
+            case VISION -> idleVisionWorkers;
+            case ROUTING -> idleRoutingWorkers;
+        };
 
-    /**
-     * Take an idle routing worker, if any.
-     */
-    public Optional<String> takeIdleRoutingWorker() {
-        return takeIdle(idleRoutingWorkers);
+        if (idleWorkers.isEmpty()) {
+            return Optional.empty();
+        }
+
+        Iterator<String> iterator = idleWorkers.iterator();
+        String workerId = iterator.next();
+        iterator.remove();
+
+        return Optional.of(workerId);
     }
 
     /**
@@ -61,19 +67,4 @@ public class IdleWorkerRepository {
     public void clearIdleRoutingWorker(String workerId) {
         idleRoutingWorkers.remove(workerId);
     }
-
-    /**
-     * Pull one worker out of the idle set.
-     */
-     private Optional<String> takeIdle(Set<String> idleWorkers) {
-         if (idleWorkers.isEmpty()) {
-             return Optional.empty();
-         }
-
-         Iterator<String> iterator = idleWorkers.iterator();
-         String workerId = iterator.next();
-         iterator.remove();
-
-         return Optional.of(workerId);
-     }
 }

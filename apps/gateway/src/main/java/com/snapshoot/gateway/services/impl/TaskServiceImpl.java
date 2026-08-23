@@ -2,16 +2,16 @@ package com.snapshoot.gateway.services.impl;
 
 import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootTrigger;
 import com.snapshoot.gateway.domain.enums.WorkerType;
-import com.snapshoot.gateway.domain.events.TaskPushedEvent;
 import com.snapshoot.gateway.domain.queue.Task;
 import com.snapshoot.gateway.repositories.queue.IdleWorkerRepository;
 import com.snapshoot.gateway.repositories.queue.TaskQueueRepository;
 import com.snapshoot.gateway.services.TaskService;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import com.snapshoot.gateway.domain.events.TaskEnqueuedEvent;
+
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -24,23 +24,8 @@ public class TaskServiceImpl implements TaskService {
     private final IdleWorkerRepository idleWorkerRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    /*
-        TaskQueueRepository and IdleWorkerRepository are not aware of each other.
-        For example:
-        - Thread A: Hits submitTask()
-        - Thread B: Hits nextVisionTask()
-        Without locking one, it could lead to the state where a task is enqueue and a worker is marked as idle
-        => 1 idle worker is not aware of the current available task
-
-        With the lock, thread B will wait for thread A to finish. For instance:
-        - Thread A: Finished with one task enqueued.
-        - Thread B: Get started. Then sees that there is one task in the queue. Return the task so the gateway can assign that task to that worker.
-    */
-    private final Object visionLock = new Object();
-    private final Object routingLock = new Object();
-
     @Override
-    public void submitTask(
+    public void submitTaskToVisionQueue(
         String sessionId,
         String playerId,
         byte[] imageData,
@@ -58,39 +43,35 @@ public class TaskServiceImpl implements TaskService {
             false
         );
 
-        synchronized (visionLock) {
-            matchOrEnqueue(
-                task,
-                idleWorkerRepository.takeIdleVisionWorker(),
-                taskQueueRepository::enqueueVision
-            );
-        }
+        taskQueueRepository.enqueueVision(task);
+        eventPublisher.publishEvent(new TaskEnqueuedEvent(task, WorkerType.VISION));
     }
 
     @Override
     public Optional<Task> nextVisionTask(String workerId) {
-        synchronized (visionLock) {
-            Optional<Task> task = taskQueueRepository.pollVision(workerId);
+        Optional<Task> task = taskQueueRepository.pollVision(workerId);
 
-            // If no task found for the vision worker, add that vision worker into the idle vision worker waitlist.
-            if (task.isEmpty()) {
-                idleWorkerRepository.markIdleVision(workerId);
-            }
-            return task;
+        // If no task found for the vision worker, add that vision worker into the idle vision worker waitlist.
+        if (task.isEmpty()) {
+            idleWorkerRepository.addToIdleVisionWorkers(workerId);
         }
+        return task;
     }
 
     @Override
     public Optional<Task> nextRoutingTask(String workerId) {
-        synchronized (routingLock) {
-            Optional<Task> task = taskQueueRepository.pollRouting(workerId);
+        Optional<Task> task = taskQueueRepository.pollRouting(workerId);
 
-            // If no task found for the routing worker, add that routing worker into the idle routing worker waitlist.
-            if (task.isEmpty()) {
-                idleWorkerRepository.markIdleRouting(workerId);
-            }
-            return task;
+        // If no task found for the routing worker, add that routing worker into the idle routing worker waitlist.
+        if (task.isEmpty()) {
+            idleWorkerRepository.addToIdleRoutingWorkers(workerId);
         }
+        return task;
+    }
+
+    @Override
+    public Optional<String> getIdleWorker(WorkerType workerType) {
+        return idleWorkerRepository.takeIdleWorker(workerType);
     }
 
     @Override
@@ -124,14 +105,8 @@ public class TaskServiceImpl implements TaskService {
         if (visionComputed) {
             // Update the task to be
             task.setVisionComputed(true);
-
-            synchronized (routingLock) {
-                matchOrEnqueue(
-                    task,
-                    idleWorkerRepository.takeIdleRoutingWorker(),
-                    taskQueueRepository::enqueueRouting
-                );
-            }
+            taskQueueRepository.enqueueRouting(task);
+            eventPublisher.publishEvent(new TaskEnqueuedEvent(task, WorkerType.ROUTING));
         } else {
             log.info("Task {} discarded: vision found nothing", task.getTaskId());
         }
@@ -178,26 +153,6 @@ public class TaskServiceImpl implements TaskService {
             idleWorkerRepository.clearIdleVisionWorker(workerId);
         } else {
             idleWorkerRepository.clearIdleRoutingWorker(workerId);
-        }
-    }
-
-    /**
-     * If an idle worker was waiting, hand the task straight to it and
-     * publish an event so the WebSocket layer can push it; otherwise fall
-     * back to queuing the task normally. Must be called under the lock
-     * matching {@code task}'s queue (vision/routing).
-     */
-    private void matchOrEnqueue(
-        Task task,
-        Optional<String> idleWorkerId,
-        Consumer<Task> enqueue
-    ) {
-        if (idleWorkerId.isPresent()) {
-            String workerId = idleWorkerId.get();
-            taskQueueRepository.putInFlight(workerId, task);
-            eventPublisher.publishEvent(new TaskPushedEvent(workerId, task));
-        } else {
-            enqueue.accept(task);
         }
     }
 }

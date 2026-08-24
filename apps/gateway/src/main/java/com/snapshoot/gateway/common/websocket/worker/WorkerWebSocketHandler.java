@@ -118,7 +118,7 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
         WorkerType workerType,
         WorkerMessage message
     ) {
-        boolean computed = Boolean.TRUE.equals(message.computed());
+        boolean computed = Boolean.TRUE.equals(message.success());
 
         if (workerType == WorkerType.VISION) {
             taskService.handleVisionResult(

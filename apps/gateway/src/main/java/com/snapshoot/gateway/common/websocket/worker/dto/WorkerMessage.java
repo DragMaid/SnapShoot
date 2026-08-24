@@ -7,7 +7,7 @@ package com.snapshoot.gateway.common.websocket.worker.dto;
 public record WorkerMessage(
     WorkerMessageType type,
     String taskId,
-    Boolean computed
+    Boolean success
 ) {
     public enum WorkerMessageType {
         READY,

@@ -1,17 +1,16 @@
 package com.snapshoot.gateway.common.websocket.worker.dto;
 
 import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootMetadata;
+import com.snapshoot.gateway.common.websocket.shared.TaskAssignment;
 
 /**
- * Outbound message handing a task to a worker in response to {@code READY}.
- * Deliberately excludes the task's computed flags — those are the
- * gateway's own pipeline bookkeeping, not something the worker needs.
+ * DTO to send task to vision workers
  */
-public record TaskAssignment(
+public record VisionTaskAssignment(
     String taskId,
     String sessionId,
     String playerId,
     byte[] imageData,
     PlayerShootMetadata.Orientation orientation,
     double radius
-) {}
+) implements TaskAssignment {}

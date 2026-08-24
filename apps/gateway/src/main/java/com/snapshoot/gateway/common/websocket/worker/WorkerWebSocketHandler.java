@@ -107,7 +107,7 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
                 ? taskService.nextVisionTask(workerId)
                 : taskService.nextRoutingTask(workerId);
 
-        task.ifPresent(t -> client.sendTask(workerId, t));
+        task.ifPresent(t -> client.sendTask(workerId, t, workerType));
     }
 
     /**

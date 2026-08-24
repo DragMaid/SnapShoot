@@ -4,6 +4,8 @@ from apps.vision.src.detector import Detector
 from .client import GatewayClient
 from pydantic import BaseModel, Field
 import base64
+from aiohttp import WSMsgType
+import json
 
 THRESHOLD = 0.5
 
@@ -45,12 +47,39 @@ class ImageWorker:
         await self.gateway.send(initial_message)
         
         while True:
-            
-            task = await self.gateway.receive()
-            print("Handling the task")
 
-            await self.handle_task(task)
-            print("Worker finished task")
+            message = await self.gateway.receive()
+            print(type(message))
+            print("Handling the task")
+            
+            if message.type == WSMsgType.TEXT:
+
+                task = json.loads(message.data)
+
+                print("Received task:")
+
+                result = await self.handle_task(task)
+                
+                await self.gateway.send(result)
+                            
+            
+            elif message.type == WSMsgType.CLOSE:
+                print("Server requested connection close")
+                print("Close code:", message.data)
+                break
+
+            elif message.type == WSMsgType.CLOSED:
+                print("WebSocket is closed")
+                break
+
+            elif message.type == WSMsgType.ERROR:
+                print("WebSocket error:", self.websocket.exception())
+                break
+        
+
+        print("Conneciton closed")
+            
+            
 
     async def handle_task(self, task: dict):
         print("Validating the task")
@@ -58,8 +87,10 @@ class ImageWorker:
         task = TaskMessage.model_validate(task)
 
         result = self.process_image(task)
+        
+        print("result:",result, type(result))
 
-        await self.gateway.send(result)
+        return result
 
 
     def process_image(self, task: TaskMessage):
@@ -77,6 +108,7 @@ class ImageWorker:
                 base64.b64decode(image)
                 for image in image_data
             ]
+   
         image_bytes = b"".join(image_data)
 
         image_array = np.frombuffer(

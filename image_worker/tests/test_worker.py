@@ -2,13 +2,14 @@ import asyncio
 import json
 from aiohttp import web
 import base64
+from pathlib import Path
 from image_worker.worker import ImageWorker, TaskMessage
 
 '''Put a test image file containing a person for testing worker'''
-
+BASE_FOLDER = Path(__file__).parent
 WORKER_ID = "123"
 PASSWORD = "456"
-test_image = ''
+test_image = BASE_FOLDER / 'test_image.jpeg'
 
 
 class Fakeserver:
@@ -62,11 +63,14 @@ class Fakeserver:
         for ws in self.websocket_clients.copy():
             if not ws.closed:
                 await ws.close()
+                self.websocket_clients.discard(ws)
+                print("Close")
 
         self.websocket_clients.clear()
 
         if self.runner:
             await self.runner.cleanup()
+        print("FInal")
 
     async def handle_login(
         self,
@@ -110,12 +114,21 @@ class Fakeserver:
             
             print("Successfully send task")
             
-            async for message in ws:
+            message = await ws.receive()
 
-                print("Received from worker:", message.data)
+            print("Received result from worker:", message.data)
+            
+            # async for message in ws:
+
+            #     print("Received result from worker:", message.data)
+            
+            #     print("stoping the server")
+            #     await self.stop()
 
         finally:
+            print("Handler exiting")
             self.websocket_clients.discard(ws)
+            self.stop()
 
         return ws
     
@@ -126,12 +139,16 @@ def prepare_task():
     # Read raw file data into a bytes object
         byte_data = image_file.read()
         
-        byte_list = [bytes([b]) for b in byte_data]
+    # Separate it into chunks
+        chunk_size = 4096
+
+        byte_list = [byte_data[i:i + chunk_size]
+            for i in range(0, len(byte_data), chunk_size)]
     
     # Encode the list of bytes into a list of str for serialization
         encoded_image = [
-        base64.b64encode(image).decode("utf-8")
-        for image in byte_list
+        base64.b64encode(chunk).decode("utf-8")
+        for chunk in byte_list
         ]
     
     task = TaskMessage(

@@ -33,6 +33,7 @@ services:
       - JWT_ISSUER=${JWT_ISSUER}
       - JWT_SECRET=${JWT_SECRET}
       - WORKER_PASSWORD=${WORKER_PASSWORD}
+      - GAME_SERVER_PASSWORD=${GAME_SERVER_PASSWORD}
     ports:
       - "8080:8080"
 

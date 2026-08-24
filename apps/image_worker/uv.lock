@@ -600,7 +600,7 @@ requires-dist = [
     { name = "opencv-python", specifier = ">=5.0.0.93" },
     { name = "pydantic", specifier = ">=2.13.4" },
     { name = "pytest", specifier = ">=9.1.1" },
-    { name = "vision", editable = "../apps/vision" },
+    { name = "vision", editable = "../vision" },
     { name = "websockets", specifier = ">=17.0.1" },
 ]
 
@@ -1698,7 +1698,7 @@ wheels = [
 [[package]]
 name = "vision"
 version = "0.1.0"
-source = { editable = "../apps/vision" }
+source = { editable = "../vision" }
 dependencies = [
     { name = "ultralytics" },
 ]

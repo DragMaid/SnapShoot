@@ -3,7 +3,7 @@ import json
 from aiohttp import web
 import base64
 from pathlib import Path
-from image_worker.worker import ImageWorker, TaskMessage
+from apps.image_worker.worker import ImageWorker, TaskMessage
 
 '''Put a test image file containing a person for testing worker'''
 BASE_FOLDER = Path(__file__).parent
@@ -56,7 +56,6 @@ class Fakeserver:
 
         await self.site.start()
 
-        print(f"Fake server running at http://{self.host}:{self.port}")
 
     async def stop(self) -> None:
 
@@ -64,13 +63,11 @@ class Fakeserver:
             if not ws.closed:
                 await ws.close()
                 self.websocket_clients.discard(ws)
-                print("Close")
 
         self.websocket_clients.clear()
 
         if self.runner:
             await self.runner.cleanup()
-        print("FInal")
 
     async def handle_login(
         self,
@@ -78,7 +75,6 @@ class Fakeserver:
     ) -> web.Response:
 
         body = await request.json()
-        print(body)
         worker_id = body.get("worker_id")
         password = body.get("password")
 
@@ -104,29 +100,21 @@ class Fakeserver:
         self.websocket_clients.add(ws)
 
         try:
-            message = await ws.receive()
 
-            print("Received from worker:", message)
-            
+            inital_message = await ws.receive()
+            assert inital_message
+
             task = prepare_task()
+            assert task
             
             await ws.send_json(task.model_dump())
             
-            print("Successfully send task")
+            task_result= await ws.receive()
             
-            message = await ws.receive()
+            assert task_result
 
-            print("Received result from worker:", message.data)
-            
-            # async for message in ws:
-
-            #     print("Received result from worker:", message.data)
-            
-            #     print("stoping the server")
-            #     await self.stop()
 
         finally:
-            print("Handler exiting")
             self.websocket_clients.discard(ws)
             self.stop()
 

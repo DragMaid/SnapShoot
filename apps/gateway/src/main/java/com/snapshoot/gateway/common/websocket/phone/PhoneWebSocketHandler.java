@@ -1,14 +1,14 @@
 package com.snapshoot.gateway.common.websocket.phone;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootTrigger;
 import com.snapshoot.gateway.services.TaskService;
 
+import java.io.IOException;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import tools.jackson.databind.ObjectMapper;
-
-import java.util.Map;
-
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.BinaryMessage;
 import org.springframework.web.socket.CloseStatus;
@@ -20,7 +20,9 @@ import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 @RequiredArgsConstructor
 public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
 
-    private final ObjectMapper objectMapper;
+    @Qualifier("msgpackObjectMapper")
+    private final ObjectMapper msgpackObjectMapper;
+
     private final PhoneWebSocketRegistry registry;
     private final TaskService taskService;
 
@@ -54,13 +56,32 @@ public class PhoneWebSocketHandler extends AbstractWebSocketHandler {
         BinaryMessage message
     ) {
         Map<String, Object> sessionAttributes = session.getAttributes();
-
         String playerId = (String) sessionAttributes.get("playerId");
         String sessionId = (String) sessionAttributes.get("sessionId");
 
-        PlayerShootTrigger imageShot = objectMapper.readValue(message.getPayload().array(), PlayerShootTrigger.class);
+        // Get the binary message payload
+        PlayerShootTrigger data;
+        try {
+            data = msgpackObjectMapper.readValue(
+                message.getPayload().array(),
+                PlayerShootTrigger.class
+            );
+        } catch (IOException e) {
+            log.warn(
+                "Failed to decode shoot trigger from player {}: {}",
+                playerId,
+                e.getMessage()
+            );
+            return;
+        }
 
         // Send image shot data into the vision service
-        taskService.submitTaskToVisionQueue(sessionId, playerId, imageShot.imageData(), imageShot.orientation(), imageShot.radius());
+        taskService.submitTaskToVisionQueue(
+            sessionId,
+            playerId,
+            data.imageData(),
+            data.metadata().orientation(),
+            data.metadata().radius()
+        );
     }
 }

@@ -1,5 +1,6 @@
 package com.snapshoot.gateway.common.websocket.worker.client;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.snapshoot.gateway.common.websocket.shared.AbstractWebSocketClient;
 import com.snapshoot.gateway.common.websocket.worker.WorkerWebSocketRegistry;
 import com.snapshoot.gateway.common.websocket.worker.dto.TaskAssignment;
@@ -13,7 +14,6 @@ import java.util.Optional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
-import tools.jackson.databind.ObjectMapper;
 
 /**
  * A WebSocket client to send messages to Workers.

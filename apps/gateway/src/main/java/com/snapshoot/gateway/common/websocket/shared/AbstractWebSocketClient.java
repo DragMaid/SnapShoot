@@ -5,11 +5,11 @@ import java.io.IOException;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.snapshoot.gateway.domain.enums.WebSocketPeerType;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import tools.jackson.databind.ObjectMapper;
 
 
 /**

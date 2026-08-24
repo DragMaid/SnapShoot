@@ -1,6 +1,6 @@
 package com.snapshoot.gateway.common.websocket.worker.dto;
 
-import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootTrigger;
+import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootMetadata;
 
 /**
  * Outbound message handing a task to a worker in response to {@code READY}.
@@ -12,6 +12,6 @@ public record TaskAssignment(
     String sessionId,
     String playerId,
     byte[] imageData,
-    PlayerShootTrigger.Orientation orientation,
+    PlayerShootMetadata.Orientation orientation,
     double radius
 ) {}

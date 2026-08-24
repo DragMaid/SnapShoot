@@ -1,6 +1,6 @@
 package com.snapshoot.gateway.services.impl;
 
-import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootTrigger;
+import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootMetadata;
 import com.snapshoot.gateway.domain.enums.WorkerType;
 import com.snapshoot.gateway.domain.queue.Task;
 import com.snapshoot.gateway.repositories.queue.IdleWorkerRepository;
@@ -29,7 +29,7 @@ public class TaskServiceImpl implements TaskService {
         String sessionId,
         String playerId,
         byte[] imageData,
-        PlayerShootTrigger.Orientation orientation,
+        PlayerShootMetadata.Orientation orientation,
         double radius
     ) {
         Task task = new Task(

@@ -26,7 +26,6 @@ class GatewayClient:
         self.session = aiohttp.ClientSession()
         async with self.session as session:
                 
-            print(self.http_endpoint)
             async with session.post(
                 self.http_endpoint, 
                 json={'worker_id': self.worker_id, 'password': self.password},
@@ -44,13 +43,7 @@ class GatewayClient:
                 "Authorization": f"Bearer {self.token}"
             }
         )
-        print("Connected to ws server")
-
-        # self.websocket = await websockets.connect(
-        #     self.uri,
-        #     additional_headers = headers,
-        # )
-
+        
     async def receive(self) -> dict:
         data = await self.websocket.receive()
         return data

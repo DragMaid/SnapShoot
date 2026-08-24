@@ -33,62 +33,53 @@ class ImageWorker:
                                      uri=uri)
         self.threshold = threshold
         self.detector = Detector()
-        print("Initialzing")
 
     async def run(self):
         '''Receive the task continously'''
         await self.gateway.authenticate()
 
         await self.gateway.connect()
-        print("Connection started")
         
         initial_message = WorkerMessage()
-        print("Initial message",initial_message)
+
         await self.gateway.send(initial_message)
         
         while True:
 
             message = await self.gateway.receive()
-            print(type(message))
-            print("Handling the task")
+
             
             if message.type == WSMsgType.TEXT:
 
                 task = json.loads(message.data)
 
-                print("Received task:")
+                assert task
 
                 result = await self.handle_task(task)
+                
+                assert result
                 
                 await self.gateway.send(result)
                             
             
             elif message.type == WSMsgType.CLOSE:
-                print("Server requested connection close")
-                print("Close code:", message.data)
                 break
 
             elif message.type == WSMsgType.CLOSED:
-                print("WebSocket is closed")
                 break
-
+ 
             elif message.type == WSMsgType.ERROR:
                 print("WebSocket error:", self.websocket.exception())
                 break
-        
-
-        print("Conneciton closed")
             
             
 
     async def handle_task(self, task: dict):
-        print("Validating the task")
         
         task = TaskMessage.model_validate(task)
 
         result = self.process_image(task)
         
-        print("result:",result, type(result))
 
         return result
 
@@ -137,9 +128,11 @@ class ImageWorker:
         shape_mask = circle_canvas > 0
 
         detected_obj = self.detector.process(image)
-        hit_percentage = self.detector.is_hit(detected_objects=detected_obj, shape_mask=shape_mask)[0]['hit_percentage']
+        hit_result = self.detector.is_hit(detected_objects=detected_obj, shape_mask=shape_mask)
+        if hit_result:
+            hit_percentage = hit_result[0]['hit_percentage']
 
-        if hit_percentage >= self.threshold:
-            return True
+            if hit_percentage >= self.threshold:
+                return True
         return False
 

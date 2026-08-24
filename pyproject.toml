@@ -12,6 +12,5 @@ dependencies = [
 
 [tool.uv.workspace]
 members = [
-    "apps/imageworker",
-    "apps/vision",
+    "imageworker",
 ]

@@ -1,0 +1,63 @@
+import websockets
+import requests
+import json
+import asyncio
+from aiohttp import web
+import aiohttp
+
+class GatewayClient:
+    '''Initiate the websocket connection with the gateway'''
+
+    def __init__(
+            self,
+            worker_id: str,
+            password: str,
+            http_endpoint: str,
+            uri: str):
+        self.worker_id = worker_id
+        self.password = password
+        self.http_endpoint = http_endpoint
+        self.uri = uri
+        self.websocket = None
+        self.session = None
+
+    async def authenticate(self) -> None:
+        '''Authenticate the worker in first connection'''
+        self.session = aiohttp.ClientSession()
+        async with self.session as session:
+                
+            print(self.http_endpoint)
+            async with session.post(
+                self.http_endpoint, 
+                json={'worker_id': self.worker_id, 'password': self.password},
+                timeout=2) as response:
+                data = await response.json()
+                access_token = data['access_token']
+                self.token = access_token
+        self.session.close()
+
+    async def connect(self):
+        self.session = aiohttp.ClientSession()
+        self.websocket = await self.session.ws_connect(
+            self.uri,
+            headers={
+                "Authorization": f"Bearer {self.token}"
+            }
+        )
+        print("Connected to ws server")
+
+        # self.websocket = await websockets.connect(
+        #     self.uri,
+        #     additional_headers = headers,
+        # )
+
+    async def receive(self) -> dict:
+        data = await self.websocket.receive()
+        return data
+
+    async def send(self, data: dict):
+        await self.websocket.send_json(data.model_dump())
+
+    async def close(self):
+        if self.websocket:
+            self.websocket.close()

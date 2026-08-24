@@ -1,9 +1,8 @@
 import asyncio
-import json
 from aiohttp import web
-import base64
 from pathlib import Path
 from apps.image_worker.worker import ImageWorker, TaskMessage
+import ormsgpack
 
 '''Put a test image file containing a person for testing worker'''
 BASE_FOLDER = Path(__file__).parent
@@ -107,7 +106,9 @@ class Fakeserver:
             task = prepare_task()
             assert task
             
-            await ws.send_json(task.model_dump())
+            task_message = ormsgpack.packb(task.model_dump())
+            
+            await ws.send_bytes(task_message)
             
             task_result= await ws.receive()
             
@@ -116,7 +117,6 @@ class Fakeserver:
 
         finally:
             self.websocket_clients.discard(ws)
-            self.stop()
 
         return ws
     
@@ -126,23 +126,12 @@ def prepare_task():
          
     # Read raw file data into a bytes object
         byte_data = image_file.read()
-        
-    # Separate it into chunks
-        chunk_size = 4096
-
-        byte_list = [byte_data[i:i + chunk_size]
-            for i in range(0, len(byte_data), chunk_size)]
-    
-    # Encode the list of bytes into a list of str for serialization
-        encoded_image = [
-        base64.b64encode(chunk).decode("utf-8")
-        for chunk in byte_list
-        ]
+   
     
     task = TaskMessage(
         task_id='12324', 
         session_id = '3212', 
-        image_data = encoded_image, 
+        image_data = byte_data, 
         radius=0.1
     )
     return task

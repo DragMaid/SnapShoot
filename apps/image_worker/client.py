@@ -1,9 +1,5 @@
-import websockets
-import requests
-import json
-import asyncio
-from aiohttp import web
 import aiohttp
+import ormsgpack
 
 class GatewayClient:
     '''Initiate the websocket connection with the gateway'''
@@ -33,7 +29,7 @@ class GatewayClient:
                 data = await response.json()
                 access_token = data['access_token']
                 self.token = access_token
-        self.session.close()
+        await self.session.close()
 
     async def connect(self):
         self.session = aiohttp.ClientSession()
@@ -49,7 +45,8 @@ class GatewayClient:
         return data
 
     async def send(self, data: dict):
-        await self.websocket.send_json(data.model_dump())
+        data = ormsgpack.packb(data.model_dump())
+        await self.websocket.send_bytes(data)
 
     async def close(self):
         if self.websocket:

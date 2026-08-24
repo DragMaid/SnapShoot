@@ -3,9 +3,8 @@ import cv2
 from apps.vision.src.detector import Detector
 from .client import GatewayClient
 from pydantic import BaseModel, Field
-import base64
 from aiohttp import WSMsgType
-import json
+import ormsgpack
 
 THRESHOLD = 0.5
 
@@ -17,7 +16,7 @@ class WorkerMessage(BaseModel):
 class TaskMessage(BaseModel):
     task_id: str
     session_id: str
-    image_data: list[str]
+    image_data: bytes
     radius: float = Field(None, ge=0.00, le=1.00)
 
 class ImageWorker:
@@ -49,9 +48,9 @@ class ImageWorker:
             message = await self.gateway.receive()
 
             
-            if message.type == WSMsgType.TEXT:
+            if message.type == WSMsgType.BINARY:
 
-                task = json.loads(message.data)
+                task = ormsgpack.unpackb(message.data)
 
                 assert task
 
@@ -95,15 +94,9 @@ class ImageWorker:
 
     def reconstruct_image(self, image_data: str):
         """Restore the original image"""
-        image_data = [
-                base64.b64decode(image)
-                for image in image_data
-            ]
-   
-        image_bytes = b"".join(image_data)
 
         image_array = np.frombuffer(
-            image_bytes,
+            image_data,
             dtype=np.uint8
         )
 

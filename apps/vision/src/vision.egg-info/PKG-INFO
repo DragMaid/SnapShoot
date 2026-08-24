@@ -1,0 +1,87 @@
+Metadata-Version: 2.4
+Name: vision
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.13
+Description-Content-Type: text/markdown
+Requires-Dist: ultralytics>=8.4.115
+
+# Vision
+
+Computer vision service for hit detection: given a frame, detect people and
+their segmentation masks, then test whether a crosshair shape intersects any
+of them. See [docs/services/vision.md](../../docs/services/vision.md) for
+the service's role, boundaries, and inputs/outputs in the wider pipeline.
+
+## Setup
+
+Requires Python 3.13+ and [uv](https://docs.astral.sh/uv/).
+
+```bash
+cd apps/vision
+uv sync
+```
+
+Model weights (`*.pt`) are not committed to git (see root `.gitignore`).
+`yolov8n.pt` / `yolov8n-seg.pt` are pulled automatically by `ultralytics` on
+first use; `best.pt` is a fine-tuned checkpoint produced by
+[`src/snapshoot_train.ipynb`](#training-notebook) and must be placed in this
+directory manually if you want to use it in place of the stock model.
+
+## Usage
+
+`src/detector.py` exposes the `Detector` class (`process()` for
+detection/segmentation, `is_hit()` for crosshair intersection) and doubles
+as a CLI for trying it out against a single image:
+
+```bash
+uv run src/detector.py --image assets/example.jpg
+```
+
+Useful flags:
+
+| Flag                 | Default                | Description                                                             |
+| -------------------- | ----------------------- | ------------------------------------------------------------------------ |
+| `-i, --image`         | `assets/example.jpg`    | Image to run detection on.                                               |
+| `--od-enabled`        | off                      | Run object detection first, then segment each crop, instead of segmenting the whole frame directly. |
+| `--od-model`           | `yolov8n.pt`             | Object detection weights (only used with `--od-enabled`).                |
+| `--seg-model`          | `yolov8n-seg.pt`         | Segmentation weights.                                                    |
+| `--radius`             | `10`                     | Radius (px) of the example crosshair hit circle at the image center.     |
+| `-o, --output`         | none                     | Save the debug overlay (detections + hit circle) to this path.           |
+| `--no-display`         | off                      | Don't open a GUI preview window — use for headless/SSH/CI runs.          |
+
+Run `uv run src/detector.py --help` for the full list.
+
+## Training notebook
+
+[`src/snapshoot_train.ipynb`](src/snapshoot_train.ipynb) is a Colab notebook
+that produces a fine-tuned segmentation checkpoint. It's exploratory/offline
+tooling, not something CI runs — steps:
+
+1. Pulls the [`sebnae/IndoorCrowd`](https://huggingface.co/datasets/sebnae/IndoorCrowd)
+   dataset from the Hugging Face Hub (needs an `HF_SECRET` token set in the
+   Colab environment).
+2. Converts its RLE segmentation masks to YOLO-format polygon labels and
+   lays out a `yolo_dataset/` directory (`images/`, `labels/`,
+   `data.yaml`) split into train/val/test.
+3. Fine-tunes a `yolov8n-seg` checkpoint on that dataset via
+   `ultralytics.YOLO(...).train(...)`.
+4. Optionally uploads the resulting run directory back to the Hugging Face
+   Hub.
+
+The resulting checkpoint is what `best.pt` is expected to be — copy it into
+`apps/vision/` and pass `--seg-model best.pt` (or set
+`seg_model_path="best.pt"` when constructing `Detector`) to use it.
+
+## Tests
+
+```bash
+uv run pytest
+```
+
+`tests/test_vision.py` runs the real segmentation model against
+`assets/example.jpg`, checking `Detector.process()`'s output shape and
+`Detector.is_hit()`'s intersection math. See
+[Testing Strategy](../../docs/development/testing.md) for how this fits into
+the repo's broader test layout, and `.github/workflows/ci.yaml` for how it's
+run automatically.

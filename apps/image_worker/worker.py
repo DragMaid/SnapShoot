@@ -5,12 +5,17 @@ from .client import GatewayClient
 from pydantic import BaseModel, Field
 from aiohttp import WSMsgType
 import ormsgpack
+from enum import Enum
 
 THRESHOLD = 0.5
 
+class MessageType(Enum):
+    READY = 'ready'
+    RESULT = 'result'
+
 class WorkerMessage(BaseModel):
+    message_type: MessageType = MessageType.READY
     task_id: str = '1233'
-    session_id: str = '22'
     success: bool = False
 
 class TaskMessage(BaseModel):
@@ -78,16 +83,15 @@ class ImageWorker:
         task = TaskMessage.model_validate(task)
 
         result = self.process_image(task)
-        
-
+    
         return result
 
 
     def process_image(self, task: TaskMessage):
         '''Process the image based on the json received'''
         success = self.is_hit(self.reconstruct_image(task.image_data), task.radius)
-        result = WorkerMessage(task_id = task.task_id,
-                               session_id = task.session_id,
+        result = WorkerMessage(MessageType=MessageType.RESULT,
+                                task_id = task.task_id,
                                success = success)
         return result
 

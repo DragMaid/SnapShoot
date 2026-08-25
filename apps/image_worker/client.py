@@ -44,7 +44,7 @@ class GatewayClient:
         data = await self.websocket.receive()
         return data
 
-    async def send(self, data: dict):
+    async def send(self, data):
         data = ormsgpack.packb(data.model_dump())
         await self.websocket.send_bytes(data)
 

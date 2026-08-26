@@ -18,6 +18,4 @@ public class Task {
     private byte[] imageData;
     private PlayerShootMetadata.Orientation orientation;
     private double radius;
-    private boolean visionComputed;
-    private boolean routingComputed;
 }

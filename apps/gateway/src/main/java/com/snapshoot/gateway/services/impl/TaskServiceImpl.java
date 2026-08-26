@@ -2,6 +2,7 @@ package com.snapshoot.gateway.services.impl;
 
 import com.snapshoot.gateway.common.websocket.phone.dto.PlayerShootMetadata;
 import com.snapshoot.gateway.domain.enums.WorkerType;
+import com.snapshoot.gateway.domain.events.TaskEnqueuedEvent;
 import com.snapshoot.gateway.domain.queue.Task;
 import com.snapshoot.gateway.repositories.queue.IdleWorkerRepository;
 import com.snapshoot.gateway.repositories.queue.TaskQueueRepository;
@@ -10,8 +11,6 @@ import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import com.snapshoot.gateway.domain.events.TaskEnqueuedEvent;
-
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 
@@ -38,34 +37,28 @@ public class TaskServiceImpl implements TaskService {
             playerId,
             imageData,
             orientation,
-            radius,
-            false,
-            false
+            radius
         );
 
-        taskQueueRepository.enqueueVision(task);
-        eventPublisher.publishEvent(new TaskEnqueuedEvent(task, WorkerType.VISION));
+        taskQueueRepository.enqueueTask(task, WorkerType.VISION);
+        eventPublisher.publishEvent(
+            new TaskEnqueuedEvent(task, WorkerType.VISION)
+        );
     }
 
     @Override
-    public Optional<Task> nextVisionTask(String workerId) {
-        Optional<Task> task = taskQueueRepository.pollVision(workerId);
+    public Optional<Task> nextTask(String workerId, WorkerType workerType) {
+        Optional<Task> task = taskQueueRepository.pollTask(
+            workerId,
+            workerType
+        );
 
-        // If no task found for the vision worker, add that vision worker into the idle vision worker waitlist.
-        if (task.isEmpty()) {
-            idleWorkerRepository.addToIdleVisionWorkers(workerId);
+        if (task.isPresent()) {
+            taskQueueRepository.putInProgress(workerId, task.get());
+        } else {
+            idleWorkerRepository.addToIdleWorkers(workerId, workerType);
         }
-        return task;
-    }
 
-    @Override
-    public Optional<Task> nextRoutingTask(String workerId) {
-        Optional<Task> task = taskQueueRepository.pollRouting(workerId);
-
-        // If no task found for the routing worker, add that routing worker into the idle routing worker waitlist.
-        if (task.isEmpty()) {
-            idleWorkerRepository.addToIdleRoutingWorkers(workerId);
-        }
         return task;
     }
 
@@ -75,84 +68,69 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
-    public void handleVisionResult(
+    public void handleWorkerResult(
         String workerId,
         String taskId,
-        boolean visionComputed
+        WorkerType workerType,
+        Boolean success
     ) {
-        // Non-existent task warning
-        Optional<Task> inFlight = taskQueueRepository.takeInFlight(workerId);
-        if (inFlight.isEmpty()) {
+        Optional<Task> maybeTask = verifyWorkerResult(workerId, taskId);
+
+        if (maybeTask.isEmpty()) {
             log.warn(
-                "Vision worker {} reported a result but had no task in flight",
-                workerId
+                "{} worker {} reported taskId {} but no task found in inProgress map",
+                workerType, workerId, taskId
             );
             return;
         }
 
-        // Wrong task warning
-        Task task = inFlight.get();
-        if (!task.getTaskId().equals(taskId)) {
-            log.warn(
-                "Vision worker {} reported taskId {} but was holding {}",
-                workerId,
-                taskId,
-                task.getTaskId()
-            );
-        }
+        Task task = maybeTask.get();
 
-        // Pass the task to the routing queue
-        if (visionComputed) {
-            // Update the task to be
-            task.setVisionComputed(true);
-            taskQueueRepository.enqueueRouting(task);
-            eventPublisher.publishEvent(new TaskEnqueuedEvent(task, WorkerType.ROUTING));
-        } else {
-            log.info("Task {} discarded: vision found nothing", task.getTaskId());
-        }
-    }
-
-    @Override
-    public void handleRoutingResult(
-        String workerId,
-        String taskId,
-        boolean routingComputed
-    ) {
-        // Non-existent task warning
-        Optional<Task> inFlight = taskQueueRepository.takeInFlight(workerId);
-        if (inFlight.isEmpty()) {
-            log.warn(
-                "Routing worker {} reported a result but had no task in flight",
-                workerId
+        // Stop the computing process due to failure result.
+        if (Boolean.FALSE.equals(success)) {
+            log.info(
+                "Task {} discarded: {} worker reported failure",
+                task.getTaskId(), workerType
             );
             return;
         }
 
-        // Wrong task warning
-        Task task = inFlight.get();
-        if (!task.getTaskId().equals(taskId)) {
-            log.warn(
-                "Routing worker {} reported taskId {} but was holding {}",
-                workerId,
-                taskId,
-                task.getTaskId()
-            );
+        // Forward the task until done.
+        switch (workerType) {
+            case VISION:
+                forwardTask(task, WorkerType.ROUTING);
+                break;
+            case ROUTING:
+                // TODO: Forward the completed task to the Attribution service once it exists
+                log.info(
+                    "Task {} routing computed, ready for attribution",
+                    task.getTaskId()
+                );
+                break;
         }
-
-        // TODO: Forward the completed task to the Attribution service once it exists
-        log.info(
-            "Task {} routing computed: {}",
-            task.getTaskId(),
-            routingComputed
-        );
     }
 
     @Override
     public void workerDisconnected(WorkerType workerType, String workerId) {
-        if (workerType == WorkerType.VISION) {
-            idleWorkerRepository.clearIdleVisionWorker(workerId);
-        } else {
-            idleWorkerRepository.clearIdleRoutingWorker(workerId);
-        }
+        idleWorkerRepository.clearIdlWorker(workerId, workerType);
     }
+
+    /**
+     * Verify if the worker's result is legit by checking it with the inProgress map this gateway keeps.
+     */
+     private Optional<Task> verifyWorkerResult(String workerId, String taskId) {
+         return taskQueueRepository.takeInProgress(workerId)
+             .filter(t -> t.getTaskId().equals(taskId))
+             .or(() -> {
+                 return Optional.empty();
+             });
+     }
+
+     /**
+      * Move a task into the next stage's queue and announce it.
+      */
+     private void forwardTask(Task task, WorkerType nextWorkerType) {
+         taskQueueRepository.enqueueTask(task, nextWorkerType);
+         eventPublisher.publishEvent(new TaskEnqueuedEvent(task, nextWorkerType));
+     }
 }

@@ -7,15 +7,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.springframework.stereotype.Repository;
 
+import com.snapshoot.gateway.domain.enums.WorkerType;
 import com.snapshoot.gateway.domain.queue.Task;
 
 /**
- * An in-memory task queue for Vision/Routing workers to pull from.
- *
- * A task always lands on the vision queue first. Once a worker pulls it (or
- * is matched to it directly, see {@link #putInFlight}), it moves into
- * {@code inFlight} (keyed by workerId, since a worker only ever holds one
- * task at a time) until that worker reports a result.
+ * An in-memory tasks queue for the distributed Vision/Routing workers system.
  */
 @Repository
 public class TaskQueueRepository {
@@ -24,54 +20,49 @@ public class TaskQueueRepository {
     private final BlockingQueue<Task> visionTaskQueue = new LinkedBlockingQueue<>();
     private final BlockingQueue<Task> routingTaskQueue = new LinkedBlockingQueue<>();
 
-    // In progress tasks
-    private final ConcurrentHashMap<String, Task> inFlight = new ConcurrentHashMap<>();
+    // In progress tasks (workerId -> Task). Use this to check whether the result the workers give back are legitimate
+    // We don't want to receive any shit out of no where.
+    private final ConcurrentHashMap<String, Task> inProgress = new ConcurrentHashMap<>();
 
     /**
-     * Add a task to the vision queue
+     * Enqueue a task into the correct queue.
      */
-    public void enqueueVision(Task task) {
-        visionTaskQueue.add(task);
-    }
-
-    /**
-     * Add a task to the routing queue
-     */
-    public void enqueueRouting(Task task) {
-        routingTaskQueue.add(task);
-    }
-
-    /**
-     * Assign the task to a vision worker
-     */
-    public Optional<Task> pollVision(String workerId) {
-        return poll(visionTaskQueue, workerId);
-    }
-
-    /**
-     * Assign the task to a routing worker
-     */
-    public Optional<Task> pollRouting(String workerId) {
-        return poll(routingTaskQueue, workerId);
-    }
-
-    /**
-     * Register a task as in-flight for a worker that was matched directly
-     * (e.g. it was already idle), without going through the queue.
-     */
-    public void putInFlight(String workerId, Task task) {
-        inFlight.put(workerId, task);
-    }
-
-    public Optional<Task> takeInFlight(String workerId) {
-        return Optional.ofNullable(inFlight.remove(workerId));
-    }
-
-    private Optional<Task> poll(BlockingQueue<Task> queue, String workerId) {
-        Task task = queue.poll();
-        if (task != null) {
-            inFlight.put(workerId, task);
+    public void enqueueTask(Task task, WorkerType workerType) {
+        switch (workerType) {
+           	case VISION:
+          		visionTaskQueue.add(task);
+          		break;
+            case ROUTING:
+                routingTaskQueue.add(task);
+                break;
         }
+    }
+
+    /**
+     * Poll a task from its queue.
+     */
+    public Optional<Task> pollTask(String workerId, WorkerType workerType) {
+        BlockingQueue<Task> queue = switch (workerType) {
+            case VISION -> visionTaskQueue;
+            case ROUTING -> routingTaskQueue;
+        };
+
+        Task task = queue.poll();
+
         return Optional.ofNullable(task);
+    }
+
+    /**
+     * Register a task as in-progress for the worker.
+     */
+    public void putInProgress(String workerId, Task task) {
+        inProgress.put(workerId, task);
+    }
+
+    /**
+     * Stop tracking that task as in-progress from that worker.
+     */
+    public Optional<Task> takeInProgress(String workerId) {
+        return Optional.ofNullable(inProgress.remove(workerId));
     }
 }

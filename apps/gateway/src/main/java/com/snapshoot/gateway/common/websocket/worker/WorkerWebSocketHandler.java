@@ -102,10 +102,7 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
         String workerId,
         WorkerType workerType
     ) {
-        Optional<Task> task =
-            workerType == WorkerType.VISION
-                ? taskService.nextVisionTask(workerId)
-                : taskService.nextRoutingTask(workerId);
+        Optional<Task> task = taskService.nextTask(workerId, workerType);
 
         task.ifPresent(t -> client.sendTask(workerId, t, workerType));
     }
@@ -118,20 +115,6 @@ public class WorkerWebSocketHandler extends AbstractWebSocketHandler {
         WorkerType workerType,
         WorkerMessage message
     ) {
-        boolean computed = Boolean.TRUE.equals(message.success());
-
-        if (workerType == WorkerType.VISION) {
-            taskService.handleVisionResult(
-                workerId,
-                message.taskId(),
-                computed
-            );
-        } else {
-            taskService.handleRoutingResult(
-                workerId,
-                message.taskId(),
-                computed
-            );
-        }
+        taskService.handleWorkerResult(workerId, message.taskId(), workerType, message.success());
     }
 }

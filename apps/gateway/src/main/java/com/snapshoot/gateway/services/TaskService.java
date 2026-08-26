@@ -25,14 +25,9 @@ public interface TaskService {
     );
 
     /**
-     * Get the next task for vision workers. If not found, put that vision worker into a waitlist.
+     * Get the next task for the worker. If not found, put the worker into the waitlist.
      */
-    Optional<Task> nextVisionTask(String workerId);
-
-    /**
-     * Get the next task for routing workers. If not found, put that routing worker into a waitlist.
-     */
-    Optional<Task> nextRoutingTask(String workerId);
+    Optional<Task> nextTask(String workerId, WorkerType workerType);
 
     /**
      * Get any idle VISION/ROUTING worker.
@@ -40,14 +35,9 @@ public interface TaskService {
     Optional<String> getIdleWorker(WorkerType workerType);
 
     /**
-     * Handle the result from the vision worker
+     * Handle the result from the worker.
      */
-    void handleVisionResult(String workerId, String taskId, boolean visionComputed);
-
-    /**
-     * Handle the result from the routing worker
-     */
-    void handleRoutingResult(String workerId, String taskId, boolean routingComputed);
+     void handleWorkerResult(String workerId, String taskId, WorkerType workerType, Boolean success);
 
     /**
      * Clear a worker's idle registration, e.g. on disconnect, so it can no

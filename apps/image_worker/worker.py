@@ -15,8 +15,8 @@ class MessageType(Enum):
 
 class WorkerMessage(BaseModel):
     message_type: MessageType = MessageType.READY
-    task_id: str = '1233'
-    success: bool = False
+    task_id: str | None = None
+    success: bool | None = None
 
 class TaskMessage(BaseModel):
     task_id: str

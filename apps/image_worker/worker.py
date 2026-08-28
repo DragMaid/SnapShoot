@@ -1,13 +1,15 @@
 import numpy as np
 import cv2
 from apps.vision.src.detector import Detector
-from .client import GatewayClient
+from apps.image_worker.client import GatewayClient
 from pydantic import BaseModel, Field
 from aiohttp import WSMsgType
 import ormsgpack
+import aiohttp
 from enum import Enum
 
 THRESHOLD = 0.5
+MAX_RETRY = 10
 
 class MessageType(Enum):
     READY = 'ready'
@@ -23,7 +25,8 @@ class TaskMessage(BaseModel):
     session_id: str
     image_data: bytes
     radius: float = Field(None, ge=0.00, le=1.00)
-
+    
+    
 class ImageWorker:
     '''Carry out the task received from the gateway client'''
     
@@ -40,9 +43,30 @@ class ImageWorker:
 
     async def run(self):
         '''Receive the task continously'''
-        await self.gateway.authenticate()
-
-        await self.gateway.connect()
+        authenticated = False
+        connected = False
+        for i in range(MAX_RETRY):
+            try:
+                await self.gateway.authenticate()
+                authenticated = True
+                break    
+            except ConnectionRefusedError as e:
+                print(e)
+                raise
+        if not authenticated:
+            raise RuntimeError("Could not authenticated the worker")
+        
+        for i in range(MAX_RETRY):
+            try:
+                await self.gateway.connect()
+                connected = True
+                break
+            
+            except aiohttp.client_exceptions.ClientConnectorError as e:
+                print(e)
+                raise
+        if not connected:
+            raise RuntimeError("Could not connect with websocket gateway")
         
         initial_message = WorkerMessage()
 

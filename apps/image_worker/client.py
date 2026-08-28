@@ -1,6 +1,8 @@
 import aiohttp
 import ormsgpack
 
+MAX_RETRY = 10
+
 class GatewayClient:
     '''Initiate the websocket connection with the gateway'''
 
@@ -21,7 +23,6 @@ class GatewayClient:
         '''Authenticate the worker in first connection'''
         self.session = aiohttp.ClientSession()
         async with self.session as session:
-                
             async with session.post(
                 self.http_endpoint, 
                 json={'worker_id': self.worker_id, 'password': self.password},
@@ -29,7 +30,8 @@ class GatewayClient:
                 data = await response.json()
                 access_token = data['access_token']
                 self.token = access_token
-        await self.session.close()
+           
+                
 
     async def connect(self):
         self.session = aiohttp.ClientSession()
@@ -45,8 +47,8 @@ class GatewayClient:
         return data
 
     async def send(self, data):
-        data = ormsgpack.packb(data.model_dump())
-        await self.websocket.send_bytes(data)
+        data = data.model_dump_json()
+        await self.websocket.send_json(data)
 
     async def close(self):
         if self.websocket:

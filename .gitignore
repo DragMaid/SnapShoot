@@ -1,2 +1,6 @@
 dataset
 *.pt
+__pycache__/
+.next
+node_modules
+.DS_Store

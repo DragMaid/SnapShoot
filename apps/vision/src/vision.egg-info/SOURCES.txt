@@ -1,0 +1,9 @@
+README.md
+pyproject.toml
+src/detector.py
+src/vision.egg-info/PKG-INFO
+src/vision.egg-info/SOURCES.txt
+src/vision.egg-info/dependency_links.txt
+src/vision.egg-info/requires.txt
+src/vision.egg-info/top_level.txt
+tests/test_vision.py

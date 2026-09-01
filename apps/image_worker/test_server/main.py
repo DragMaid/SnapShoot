@@ -1,15 +1,11 @@
-from worker import ImageWorker
 import asyncio
+from server import Fakeserver
 import signal
 
 async def main():
-    worker = ImageWorker(
-        '123',
-        '456',
-        'http://server:3000/register-worker',
-        'ws://server:3000/ws'
-    )
-    await worker.run()
+    server = Fakeserver()
+    
+    await server.start()
     
     stop_event = asyncio.Event()
     loop = asyncio.get_running_loop()
@@ -17,10 +13,8 @@ async def main():
         loop.add_signal_handler(sig, stop_event.set)
 
     await stop_event.wait()
-    await worker.stop()
-    
-    
-    
+    await server.stop()
+
 
 
 if __name__ == "__main__":

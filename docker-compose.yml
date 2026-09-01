@@ -1,0 +1,14 @@
+services:
+  server:
+    build:
+      context: .
+      dockerfile: apps/image_worker/test_server/Dockerfile
+    ports:
+      - "3000:3000"
+
+  worker:
+    build: 
+      context: .
+      dockerfile: apps/image_worker/Dockerfile
+    depends_on:
+      - server

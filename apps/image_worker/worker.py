@@ -53,6 +53,9 @@ class ImageWorker:
             except ConnectionRefusedError as e:
                 print(e)
                 raise
+            except aiohttp.client_exceptions.ClientConnectorError as e:
+                print(e)
+                print("A")
         if not authenticated:
             raise RuntimeError("Could not authenticated the worker")
         

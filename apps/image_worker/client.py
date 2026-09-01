@@ -31,8 +31,7 @@ class GatewayClient:
                 access_token = data['access_token']
                 self.token = access_token
            
-                
-
+    
     async def connect(self):
         self.session = aiohttp.ClientSession()
         self.websocket = await self.session.ws_connect(
